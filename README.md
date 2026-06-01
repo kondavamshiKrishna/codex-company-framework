@@ -48,7 +48,8 @@ By default, internal Codex paths are automatic:
 Use `--advanced` only if you intentionally want to change those internal paths.
 
 On Windows, setup detects available drives and asks which drive should hold
-external company memory. It then creates:
+external company memory. It skips the system drive when another drive is
+available. It then creates:
 
 ```text
 <selected-drive>:\Codex\Companies

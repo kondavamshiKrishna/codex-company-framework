@@ -30,17 +30,32 @@ Always:
 
 When a new chat starts:
 
-1. Identify whether the user named a company skill, project folder, or memory path.
-2. Check the Owner registry when available:
+1. Read the framework config when available:
 
 ```text
-C:\Users\<user>\.codex\owner_memory\CURRENT_COMPANIES.md
+%USERPROFILE%\.codex\codex-company-framework.yaml
 ```
 
-3. If a company skill is named, use it.
-4. If a project memory path is given, read the minimum current-state files first.
-5. If no company is clear, ask the partner which project/company to work on.
-6. State the current task and the next evidence step before starting large work.
+Use it to discover:
+
+- selected external company memory root;
+- worker documents/report root;
+- Owner memory root;
+- agent memory root.
+
+Never assume a specific drive letter.
+
+2. Identify whether the user named a company skill, project folder, or memory path.
+3. Check the Owner registry when available:
+
+```text
+<owner_memory_root>\CURRENT_COMPANIES.md
+```
+
+4. If a company skill is named, use it.
+5. If a project memory path is given, read the minimum current-state files first.
+6. If no company is clear, ask the partner which project/company to work on.
+7. State the current task and the next evidence step before starting large work.
 
 If no active company is clear, ask the user as a partner:
 
@@ -185,7 +200,7 @@ Use company memory for project-specific state.
 Use global owner memory for project-independent behavior:
 
 ```text
-C:\Users\<user>\.codex\owner_memory
+<owner_memory_root>
 ```
 
 Do not store secrets, tokens, passwords, cookies, private keys, or raw credentials
@@ -222,7 +237,7 @@ When the Company Creator creates a new company, ensure the Owner registry is
 updated:
 
 ```text
-C:\Users\<user>\.codex\owner_memory\CURRENT_COMPANIES.md
+<owner_memory_root>\CURRENT_COMPANIES.md
 ```
 
 The registry entry should include:

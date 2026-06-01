@@ -29,9 +29,9 @@ With explicit paths:
 
 ```powershell
 npx codex-company-framework setup --yes `
-  --codex-home "C:\Users\<user>\.codex" `
-  --company-root "V:\Codex\Companies" `
-  --worker-documents-root "V:\Codex\Companies"
+  --codex-home "%USERPROFILE%\.codex" `
+  --company-root "<selected-drive>:\Codex\Companies" `
+  --worker-documents-root "<selected-drive>:\Codex\Companies"
 ```
 
 The setup wizard asks:
@@ -44,9 +44,9 @@ Worker documents/reports root
 It does not ask normal users for internal Codex paths. These are automatic:
 
 ```text
-Codex home:        C:\Users\<user>\.codex
-Owner memory root: C:\Users\<user>\.codex\owner_memory
-Agent memory root: C:\Users\<user>\.codex\agent_memory
+Codex home:        %USERPROFILE%\.codex
+Owner memory root: %USERPROFILE%\.codex\owner_memory
+Agent memory root: %USERPROFILE%\.codex\agent_memory
 ```
 
 Use advanced mode only if those internal paths must be changed:
@@ -62,54 +62,55 @@ External company memory root:  <selected-drive>:\Codex\Companies
 Worker documents/reports root: <selected-drive>:\Codex\Companies
 ```
 
-If the user does not have a `V:` drive, use:
+If no non-system drive is available, the user can type a full custom path:
 
 ```text
-C:\Codex\Companies
+<custom-path>\Codex\Companies
 ```
 
 On Windows, setup detects available drives and shows numbered choices:
 
 ```text
 Detected drives:
-  1. C:\
-  2. V:\ (recommended)
+  1. D:\
+  2. E:\ (recommended)
+  3. F:\
   custom. Type a full custom path
 ```
 
-If the user chooses `V`, setup creates and uses:
+If the user chooses `E`, setup creates and uses:
 
 ```text
-V:\Codex\Companies
+E:\Codex\Companies
 ```
 
 For non-interactive setup, pass a drive:
 
 ```powershell
-npx codex-company-framework setup --yes --drive V
+npx codex-company-framework setup --yes --drive E
 ```
 
 or pass an exact root:
 
 ```powershell
-npx codex-company-framework setup --yes --company-root "D:\Codex\Companies"
+npx codex-company-framework setup --yes --company-root "<selected-drive>:\Codex\Companies"
 ```
 
 The setup command creates:
 
 ```text
-C:\Users\<user>\.codex\skills\codex-owner-operator
-C:\Users\<user>\.codex\skills\codex-company-creator
-C:\Users\<user>\.codex\owner_memory
-C:\Users\<user>\.codex\agent_memory
-C:\Users\<user>\.codex\codex-company-framework.yaml
+%USERPROFILE%\.codex\skills\codex-owner-operator
+%USERPROFILE%\.codex\skills\codex-company-creator
+%USERPROFILE%\.codex\owner_memory
+%USERPROFILE%\.codex\agent_memory
+%USERPROFILE%\.codex\codex-company-framework.yaml
 ```
 
 It also saves first-use prompt files:
 
 ```text
-C:\Users\<user>\.codex\owner_memory\FIRST_OWNER_PROMPT.md
-C:\Users\<user>\.codex\owner_memory\COMPANY_CREATOR_DISCOVERY_PROMPT_TEMPLATE.md
+%USERPROFILE%\.codex\owner_memory\FIRST_OWNER_PROMPT.md
+%USERPROFILE%\.codex\owner_memory\COMPANY_CREATOR_DISCOVERY_PROMPT_TEMPLATE.md
 ```
 
 The terminal prints the same prompt text so the user knows exactly what to do
@@ -130,18 +131,18 @@ called by the Owner when a new project needs a company structure.
 The framework writes this file:
 
 ```text
-C:\Users\<user>\.codex\codex-company-framework.yaml
+%USERPROFILE%\.codex\codex-company-framework.yaml
 ```
 
 Example:
 
 ```yaml
 version: "1"
-codex_home: "C:\\Users\\<user>\\.codex"
-owner_memory_root: "C:\\Users\\<user>\\.codex\\owner_memory"
-agent_memory_root: "C:\\Users\\<user>\\.codex\\agent_memory"
-company_root: "V:\\Codex\\Companies"
-worker_documents_root: "V:\\Codex\\Companies"
+codex_home: "%USERPROFILE%\\.codex"
+owner_memory_root: "%USERPROFILE%\\.codex\\owner_memory"
+agent_memory_root: "%USERPROFILE%\\.codex\\agent_memory"
+company_root: "<selected-drive>:\\Codex\\Companies"
+worker_documents_root: "<selected-drive>:\\Codex\\Companies"
 default_owner_skill: "codex-owner-operator"
 default_company_creator_skill: "codex-company-creator"
 ```
@@ -167,7 +168,7 @@ For non-interactive company creation:
 
 ```powershell
 npx codex-company-framework init-company --yes `
-  --project "D:\Projects\MyApp" `
+  --project "<drive>:\Projects\MyApp" `
   --name "My App" `
   --workers "product-manager,backend-engineer,qa-test-engineer,documentation-writer"
 ```
@@ -193,8 +194,8 @@ It creates:
 <company-root>\reports
 <company-root>\prompts
 <company-root>\company_skill
-C:\Users\<user>\.codex\skills\<company-id>-company
-C:\Users\<user>\.codex\agent_memory\<company-id>\<worker-name>\MEMORY.md
+%USERPROFILE%\.codex\skills\<company-id>-company
+%USERPROFILE%\.codex\agent_memory\<company-id>\<worker-name>\MEMORY.md
 ```
 
 It also creates:
@@ -211,7 +212,7 @@ for review.
 It also updates:
 
 ```text
-C:\Users\<user>\.codex\owner_memory\CURRENT_COMPANIES.md
+%USERPROFILE%\.codex\owner_memory\CURRENT_COMPANIES.md
 ```
 
 ## 4. Start The Owner In A New Chat
@@ -351,7 +352,7 @@ npx codex-company-framework init-company
 npx codex-company-framework doctor
 npx codex-company-framework owner-prompt
 npx codex-company-framework company-prompt
-npx codex-company-framework creator-discovery --project "D:\Projects\MyApp"
+npx codex-company-framework creator-discovery --project "<drive>:\Projects\MyApp"
 ```
 
 If installed globally:

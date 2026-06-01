@@ -13,6 +13,15 @@ The Company Creator works for the Owner. It should produce proposals, ask for
 missing decisions, create files only in an approved phase, and report the final
 company registry details back to the Owner.
 
+Before choosing paths, read the framework config when available:
+
+```text
+%USERPROFILE%\.codex\codex-company-framework.yaml
+```
+
+Use `company_root`, `worker_documents_root`, `owner_memory_root`, and
+`agent_memory_root` from that config. Never assume a specific drive letter.
+
 ## Company Creation Workflow
 
 1. Read the Owner request and phase.
@@ -108,7 +117,7 @@ root:
 Keep durable agent memory in Codex home, not in project report folders:
 
 ```text
-C:\Users\<user>\.codex\agent_memory\<company_id>\<agent_name>\MEMORY.md
+<agent_memory_root>\<company_id>\<agent_name>\MEMORY.md
 ```
 
 Project documents, evidence, and reports belong in the company root.
@@ -157,7 +166,7 @@ Every company skill should include:
 After creating a company, update the Owner registry:
 
 ```text
-C:\Users\<user>\.codex\owner_memory\CURRENT_COMPANIES.md
+<owner_memory_root>\CURRENT_COMPANIES.md
 ```
 
 The Owner must be able to discover:

@@ -39,7 +39,7 @@ The Owner does not belong to one project. The Owner is responsible for:
 The Owner should be implemented as a global Codex skill:
 
 ```text
-C:\Users\<user>\.codex\skills\codex-owner-operator
+%USERPROFILE%\.codex\skills\codex-owner-operator
 ```
 
 Suggested activation:
@@ -68,7 +68,7 @@ It is responsible for:
 The Company Creator should be implemented as a global Codex skill:
 
 ```text
-C:\Users\<user>\.codex\skills\codex-company-creator
+%USERPROFILE%\.codex\skills\codex-company-creator
 ```
 
 Suggested activation:
@@ -118,9 +118,9 @@ Each worker should have:
 Installed global skills and owner memory:
 
 ```text
-C:\Users\<user>\.codex\skills\codex-owner-operator
-C:\Users\<user>\.codex\skills\codex-company-creator
-C:\Users\<user>\.codex\owner_memory
+%USERPROFILE%\.codex\skills\codex-owner-operator
+%USERPROFILE%\.codex\skills\codex-company-creator
+%USERPROFILE%\.codex\owner_memory
 ```
 
 ### Project Company Root
@@ -129,13 +129,13 @@ Each project gets its own company workspace under a configurable external root.
 For this machine the default root is:
 
 ```text
-V:\Codex\Companies
+<selected-drive>:\Codex\Companies
 ```
 
 Example:
 
 ```text
-V:\Codex\Companies\sample-project-company
+<selected-drive>:\Codex\Companies\sample-project-company
 ```
 
 Suggested structure:
@@ -170,7 +170,7 @@ company-root\
 Agent memory should live inside Codex home, not inside project reports:
 
 ```text
-C:\Users\<user>\.codex\agent_memory\<company_id>\<agent_name>\MEMORY.md
+%USERPROFILE%\.codex\agent_memory\<company_id>\<agent_name>\MEMORY.md
 ```
 
 This keeps agent identity durable while keeping project documents separate.
@@ -412,7 +412,7 @@ Phase 1 - Document and agree:
   - `codex-company-creator`
   - `codex-company-framework`
 - Confirm default company root:
-  - `V:\Codex\Companies`
+  - `<selected-drive>:\Codex\Companies`
 - Confirm license:
   - MIT recommended.
 

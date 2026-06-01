@@ -25,7 +25,8 @@ Internal Codex paths are automatic. Use `--advanced` only if you need to change
 Codex home, owner memory, or agent memory paths.
 
 On Windows, setup detects available drives and asks which drive should be used
-for external company memory. It creates:
+for external company memory. It skips the system drive when another drive is
+available. It creates:
 
 ```text
 <selected-drive>:\Codex\Companies
@@ -34,7 +35,7 @@ for external company memory. It creates:
 For scripted setup:
 
 ```powershell
-npx codex-company-framework setup --yes --drive V
+npx codex-company-framework setup --yes --drive E
 ```
 
 After setup, copy the first Owner prompt printed in the terminal, open Codex IDE

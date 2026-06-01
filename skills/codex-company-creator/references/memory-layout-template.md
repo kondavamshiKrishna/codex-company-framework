@@ -3,13 +3,13 @@
 ## Global Owner Memory
 
 ```text
-C:\Users\<user>\.codex\owner_memory
+<owner_memory_root>
 ```
 
 ## Agent Memory
 
 ```text
-C:\Users\<user>\.codex\agent_memory\<company_id>\<agent_name>\MEMORY.md
+<agent_memory_root>\<company_id>\<agent_name>\MEMORY.md
 ```
 
 ## Company Project Memory
@@ -26,4 +26,3 @@ C:\Users\<user>\.codex\agent_memory\<company_id>\<agent_name>\MEMORY.md
 <company-root>\reports\final
 <company-root>\reports\archive
 ```
-

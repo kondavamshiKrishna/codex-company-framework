@@ -24,7 +24,7 @@ Usage:
 Examples:
   npx codex-company-framework setup
   npx codex-company-framework setup --yes
-  npx codex-company-framework setup --yes --drive V
+  npx codex-company-framework setup --yes --drive E
   npx codex-company-framework init-company
   npx codex-company-framework init-company --project . --name "My App" --yes
   ccf doctor
@@ -63,7 +63,7 @@ function getOption(name, defaultValue = "") {
 function defaultCompanyRoot() {
   if (isWindows()) {
     const drive = recommendedExternalDrive();
-    return drive ? companyRootForDrive(drive) : "C:\\Codex\\Companies";
+    return drive ? companyRootForDrive(drive) : path.join(os.homedir(), "CodexCompanies");
   }
   return path.join(os.homedir(), "CodexCompanies");
 }
@@ -88,11 +88,14 @@ function detectWindowsDrives() {
 }
 
 function recommendedExternalDrive() {
-  const drives = detectWindowsDrives();
-  if (drives.some((d) => d.letter === "V")) return "V";
-  const nonSystem = drives.find((d) => d.letter !== "C");
-  if (nonSystem) return nonSystem.letter;
+  const drives = externalMemoryDriveChoices();
   return drives[0] ? drives[0].letter : "";
+}
+
+function externalMemoryDriveChoices() {
+  const drives = detectWindowsDrives();
+  const nonSystem = drives.filter((d) => d.letter !== "C");
+  return nonSystem.length > 0 ? nonSystem : [];
 }
 
 function normalizeDriveLetter(value) {
@@ -189,17 +192,18 @@ async function askExternalCompanyRoot(rl) {
     return ask(rl, "External company/project memory root", defaultCompanyRoot());
   }
 
-  const drives = detectWindowsDrives();
+  const drives = externalMemoryDriveChoices();
   const recommended = recommendedExternalDrive();
 
   explain("External memory drive", [
     "This drive will store company documents, Owner project memory, worker reports, prompts, and evidence.",
     "The installer will create a Codex\\Companies folder on the selected drive.",
+    "The system drive is not offered for external memory when another drive is available.",
     "Internal Codex skills and agent memory still stay under your normal Codex home unless you use --advanced.",
   ]);
 
   if (drives.length === 0) {
-    return ask(rl, "No drives were auto-detected. Enter external company/project memory root", defaultCompanyRoot());
+    return ask(rl, "No non-system external drives were auto-detected. Enter external company/project memory root", defaultCompanyRoot());
   }
 
   console.log("");
@@ -208,7 +212,7 @@ async function askExternalCompanyRoot(rl) {
     const note = drive.letter === recommended ? " (recommended)" : "";
     console.log(`  ${index + 1}. ${drive.root}${note}`);
   });
-  console.log("  Or type a full custom path, for example D:\\Codex\\Companies");
+  console.log("  Or type a full custom path, for example <drive>:\\Codex\\Companies");
 
   const defaultIndex = Math.max(1, drives.findIndex((d) => d.letter === recommended) + 1);
   const answer = await ask(rl, "Which drive should be used for external company memory? Enter number, drive letter, or full custom path", String(defaultIndex));
@@ -219,6 +223,10 @@ async function askExternalCompanyRoot(rl) {
   }
   const letter = normalizeDriveLetter(trimmed);
   if (letter) {
+    if (letter === "C" && drives.length > 0) {
+      console.log("C:\\ is the system drive and was skipped for external memory. Using the recommended non-system drive instead.");
+      return companyRootForDrive(recommended);
+    }
     return companyRootForDrive(letter);
   }
   return trimmed || defaultCompanyRoot();
@@ -226,6 +234,9 @@ async function askExternalCompanyRoot(rl) {
 
 function companyRootFromDriveOption() {
   const drive = normalizeDriveLetter(getOption("drive", ""));
+  if (drive === "C" && recommendedExternalDrive()) {
+    throw new Error("C: is the system drive. Choose a non-system drive with --drive, or pass an explicit --company-root.");
+  }
   return drive ? companyRootForDrive(drive) : "";
 }
 
@@ -318,6 +329,12 @@ function ownerFirstPrompt() {
 
 Act as Owner and my AI partner. I am opening this project in Codex IDE.
 
+First read the framework config if it exists:
+%USERPROFILE%\\.codex\\codex-company-framework.yaml
+
+Use that config to know the selected external company memory root, worker
+documents/report root, Owner memory root, and agent memory root.
+
 First, check whether this project already has a company. If it does, tell me
 which company skill to use and continue from its current memory.
 
@@ -332,6 +349,12 @@ function companyCreatorDiscoveryPrompt(projectPath = "<project path>") {
   return `Use the codex-company-creator skill.
 
 You are Company Creator for a new Codex company.
+Read framework config if it exists:
+%USERPROFILE%\\.codex\\codex-company-framework.yaml
+
+Use the configured company_root and worker_documents_root. Do not assume a
+specific drive letter.
+
 Project path:
 ${projectPath}
 
@@ -666,7 +689,7 @@ async function initCompany() {
 
     explain("Project folder to turn into a company", [
       "This is the real app/repo folder the Company Creator will inspect.",
-      "Example: D:\\Projects\\MyApp or V:\\videonut___\\video net version 2",
+      "Example: <drive>:\\Projects\\MyApp",
     ]);
     const projectPath = await ask(rl, "Project folder to turn into a company", process.cwd());
     const defaultName = titleCase(path.basename(path.resolve(projectPath))) || "New Project";
