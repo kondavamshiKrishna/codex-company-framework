@@ -35,8 +35,9 @@ Use `company_root`, `worker_documents_root`, `owner_memory_root`, and
 9. Stop and ask if any required path, permission, runtime route, or business goal is missing.
 10. Create company skill and worker persona templates only after Owner approval.
 11. Create smoke-test prompts.
-12. Validate files and run one controlled smoke test when allowed.
-13. Return the final handoff and Owner registry entry.
+12. Validate worker roster, worker folders, role files, per-agent memory, and report/evidence folders.
+13. Run one controlled smoke test when allowed.
+14. Return the final handoff and Owner registry entry.
 
 ## Phase Rules
 
@@ -85,7 +86,8 @@ Do not invent production routes, database names, or secret locations.
 
 If the request is to repair an existing company, do only company-framework
 repair work. Do not continue the product/project task until the Owner confirms
-that registry, skill, memory, report, and agent-memory paths are consistent.
+that registry, skill, memory, report, worker roster, worker folders, role files,
+and per-agent memories are consistent.
 
 ## Default Company Layout
 
@@ -140,6 +142,15 @@ Each worker needs:
 - verification expectations;
 - escalation rules;
 - output format.
+
+Company repair must create or verify every worker has:
+
+- `<company-root>\agents\<worker>\ROLE.md`;
+- `<company-root>\agents\<worker>\reports`;
+- `<company-root>\agents\<worker>\evidence`;
+- `<company-root>\agents\<worker>\drafts`;
+- `<company-root>\agents\<worker>\handoff`;
+- `<agent_memory_root>\<company_id>\<worker>\MEMORY.md`.
 
 ## Permission Model
 

@@ -60,10 +60,16 @@ Never assume a specific drive letter.
    - company skill root matches registry company memory root;
    - project path exists;
    - agent memory folder exists or is explicitly initialized;
+   - worker/agent roster exists in registry or company skill;
+   - worker folders exist under the company root;
+   - each worker has report/evidence/draft/handoff folders;
+   - each worker has an agent memory file;
+   - empty/template worker memories are called out as warnings;
    - report/output path is clear.
 5. If any blocking integrity check fails, stop. Do not continue project work, do not
    assign workers, do not reconstruct project state, and do not create or edit
-   project files. Report the exact mismatch and propose the repair step first.
+   project files. Report the exact mismatch and propose the Company Creator repair
+   prompt first.
 6. If a company skill is named and integrity passes, use it.
 7. If a project memory path is given and integrity passes, read the minimum current-state files first.
 8. If no company is clear, ask the partner which project/company to work on.
@@ -72,6 +78,12 @@ Never assume a specific drive letter.
 The Owner must not turn a broken company activation into an operations task.
 Missing company memory, stale registry paths, mismatched company roots, or empty
 handoffs are company setup problems first.
+
+If workers/agents are missing, do not ask the user to invent the worker list.
+Study the project folder enough to propose the needed worker roles and give the
+partner a Company Creator repair prompt. The prompt must tell Company Creator to
+create or repair the worker roster, worker folders, role files, per-agent
+memory, reports/evidence folders, activation prompt, and smoke test.
 
 If no active company is clear, ask the user as a partner:
 

@@ -345,11 +345,13 @@ Core behavior:
 
 Company integrity gate:
 - read framework config, owner registry, named company skill, and company memory;
-- verify project path, company root, company memory, report root, and agent memory;
+- verify project path, company root, company memory, report root, worker roster, worker folders, role files, and agent memory;
 - treat missing memory or registry/skill conflict as blocking; treat a company
   outside the current default company_root as a warning if all registered paths exist and agree;
+- treat missing workers, missing worker folders, or missing worker memories as blocking;
+- treat empty/template worker memories as warnings that the Owner must mention;
 - if blocking checks fail, stop project work;
-- report the inconsistency and propose a repair prompt before assigning workers or editing project files.
+- report the inconsistency and provide a Company Creator repair prompt before assigning workers or editing project files.
 
 Standard new-chat activation:
 
@@ -387,11 +389,17 @@ First, run the company integrity gate:
 - read the Owner registry;
 - check whether this project already has a company;
 - if a company exists, verify its registry entry, company skill, company root,
-  memory folder, report folder, and agent memory are internally consistent.
+  memory folder, report folder, worker roster, worker folders, role files, and
+  per-worker agent memory are internally consistent.
 
 If any blocking company path, registry, skill, or memory check fails, do not
 continue project work and do not tell me to open another chat yet. Report the
-mismatch and give the repair step first.
+mismatch and give the Company Creator repair prompt first.
+
+If the company has no workers/agents, missing worker folders, or missing worker
+memories, do not continue project work. Study the project enough to propose the
+needed worker roles, then give me a Company Creator prompt to create or repair
+the company.
 
 If the company exists and integrity passes, tell me which company skill to use
 and continue from its current memory.
@@ -579,12 +587,13 @@ ${companyRoot}
 1. Read the framework config if it exists at \`%USERPROFILE%\\.codex\\codex-company-framework.yaml\`.
 2. Read the Owner registry at \`<owner_memory_root>\\CURRENT_COMPANIES.md\`.
 3. Verify this company skill, registry company memory, this company root, project path, and agent memory are consistent.
-4. If any path is missing or inconsistent, stop project work and report the repair needed first.
-5. Read \`memory/CURRENT_STATE.md\` only after integrity passes.
-6. Confirm the project path exists.
-7. Inspect real files/runtime before claims.
-8. Use workers only when useful.
-9. Write reports under this company root.
+4. Verify the worker roster exists and every worker has a company folder, report/evidence/draft/handoff folders, role file, and per-agent memory.
+5. If any path, worker, or memory is missing or inconsistent, stop project work and report the Company Creator repair prompt first.
+6. Read \`memory/CURRENT_STATE.md\` only after integrity passes.
+7. Confirm the project path exists.
+8. Inspect real files/runtime before claims.
+9. Use workers only when useful.
+10. Write reports under this company root.
 
 ## Workers
 
@@ -809,6 +818,30 @@ function createCompany({ codexHome, config, projectPath, companyName, companyId,
     ensureDir(path.join(companyRoot, "agents", worker, "evidence"));
     ensureDir(path.join(companyRoot, "agents", worker, "drafts"));
     ensureDir(path.join(companyRoot, "agents", worker, "handoff"));
+    writeIfMissing(path.join(companyRoot, "agents", worker, "ROLE.md"), `# ${titleCase(worker)} Role
+
+Company: ${companyName}
+Worker: ${worker}
+
+## Responsibilities
+
+## Allowed Actions
+
+## Forbidden Actions
+
+## Required Evidence
+
+## Output Format
+
+\`\`\`text
+Evidence checked:
+Findings:
+Assumptions:
+Unsupported claims:
+Recommended next task:
+Memory-update notes:
+\`\`\`
+`);
     const memDir = path.join(config.agentMemoryRoot, companyId, worker);
     ensureDir(memDir);
     writeIfMissing(path.join(memDir, "MEMORY.md"), `# Worker Memory
@@ -877,6 +910,23 @@ function extractRegistryField(block, label) {
   return match ? match[1].trim() : "";
 }
 
+function extractBulletSection(content, heading) {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = content.match(new RegExp(`${escaped}:?\\s*\\n([\\s\\S]*?)(?=\\n(?:##|[A-Z][A-Za-z ]+:\\s*\\n|<!-- ccf-company:end)|$)`, "i"));
+  if (!match) return [];
+  return match[1]
+    .split(/\r?\n/u)
+    .map((line) => {
+      const bullet = line.match(/^\s*[-*]\s+(.+?)\s*$/u);
+      return bullet ? slugify(bullet[1]) : "";
+    })
+    .filter(Boolean);
+}
+
+function unique(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
 function parseCompanyRegistry(ownerMemoryRoot) {
   const file = path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md");
   if (!fs.existsSync(file)) return [];
@@ -889,7 +939,8 @@ function parseCompanyRegistry(ownerMemoryRoot) {
     const skillName = extractRegistryField(block, "Company skill");
     const projectPath = extractRegistryField(block, "Project path") || extractRegistryField(block, "Project repo");
     const companyMemory = extractRegistryField(block, "Company memory");
-    return { companyName, companyId, skillName, projectPath, companyMemory };
+    const workers = extractBulletSection(block, "Workers");
+    return { companyName, companyId, skillName, projectPath, companyMemory, workers };
   });
 }
 
@@ -903,6 +954,23 @@ function extractSkillCompanyRoot(skillFile) {
 function companyRootFromMemoryPath(companyMemory) {
   if (!companyMemory) return "";
   return path.basename(companyMemory).toLowerCase() === "memory" ? path.dirname(companyMemory) : companyMemory;
+}
+
+function extractSkillWorkers(skillFile) {
+  if (!fs.existsSync(skillFile)) return [];
+  const content = fs.readFileSync(skillFile, "utf8");
+  const match = content.match(/## Workers\s*\n([\s\S]*?)(?=\n## |$)/i);
+  return match ? extractBulletSection(`Workers:\n${match[1]}`, "Workers") : [];
+}
+
+function workerMemoryStatus(memoryFile) {
+  if (!fs.existsSync(memoryFile)) return "missing";
+  const content = fs.readFileSync(memoryFile, "utf8").trim();
+  const meaningfulLines = content
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#") && !line.startsWith("Company:") && !line.startsWith("Worker:") && !line.startsWith("Last updated:"));
+  return meaningfulLines.length === 0 ? "template" : "has-notes";
 }
 
 function collectCompanyHealth(config) {
@@ -939,6 +1007,36 @@ function collectCompanyHealth(config) {
     const agentMemory = path.join(config.agentMemoryRoot, company.companyId);
     if (!fs.existsSync(agentMemory)) {
       findings.push({ level: "WARN", company, message: `Agent memory folder is missing or not initialized: ${agentMemory}` });
+    }
+    const workers = unique([...(company.workers || []), ...extractSkillWorkers(skillFile)]);
+    if (workers.length === 0) {
+      findings.push({ level: "FAIL", company, message: "No worker/agent roster found in registry or company skill. Ask Company Creator to create or repair the company workers." });
+      continue;
+    }
+    const companyRoot = registryCompanyRoot || skillCompanyRoot;
+    for (const worker of workers) {
+      const workerFolder = companyRoot ? path.join(companyRoot, "agents", worker) : "";
+      if (!workerFolder || !fs.existsSync(workerFolder)) {
+        findings.push({ level: "FAIL", company, message: `Worker folder is missing for ${worker}: ${workerFolder || "<unknown company root>"}` });
+        continue;
+      }
+      for (const subdir of ["reports", "evidence", "drafts", "handoff"]) {
+        const required = path.join(workerFolder, subdir);
+        if (!fs.existsSync(required)) {
+          findings.push({ level: "FAIL", company, message: `Worker ${worker} is missing ${subdir} folder: ${required}` });
+        }
+      }
+      const roleFile = path.join(workerFolder, "ROLE.md");
+      if (!fs.existsSync(roleFile)) {
+        findings.push({ level: "WARN", company, message: `Worker ${worker} has no ROLE.md file: ${roleFile}` });
+      }
+      const memoryFile = path.join(config.agentMemoryRoot, company.companyId, worker, "MEMORY.md");
+      const status = workerMemoryStatus(memoryFile);
+      if (status === "missing") {
+        findings.push({ level: "FAIL", company, message: `Worker ${worker} memory is missing: ${memoryFile}` });
+      } else if (status === "template") {
+        findings.push({ level: "WARN", company, message: `Worker ${worker} memory is still an empty/template memory: ${memoryFile}` });
+      }
     }
   }
   return findings;
