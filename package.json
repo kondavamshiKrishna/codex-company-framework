@@ -1,0 +1,38 @@
+{
+  "name": "codex-company-framework",
+  "version": "0.1.0",
+  "description": "Owner-led Codex company framework with reusable skills, workers, memory, and installers.",
+  "license": "MIT",
+  "author": "Codex Company Framework contributors",
+  "homepage": "https://github.com/kondavamshiKrishna/codex-company-framework#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kondavamshiKrishna/codex-company-framework.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kondavamshiKrishna/codex-company-framework/issues"
+  },
+  "type": "commonjs",
+  "bin": {
+    "codex-company-framework": "./bin/codex-company-framework.js",
+    "ccf": "./bin/codex-company-framework.js"
+  },
+  "files": [
+    "bin",
+    "docs",
+    "examples",
+    "installer",
+    "skills",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "doctor": "node ./bin/codex-company-framework.js doctor",
+    "setup": "node ./bin/codex-company-framework.js setup",
+    "init-company": "node ./bin/codex-company-framework.js init-company"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

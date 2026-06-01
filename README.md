@@ -18,6 +18,28 @@ skills live under:
 
 ## Install
 
+### From npm
+
+```powershell
+npx codex-company-framework setup
+```
+
+The setup command asks for:
+
+- Codex home;
+- Owner memory root;
+- Agent memory root;
+- external company/project memory root;
+- worker documents/reports root.
+
+After setup, create a company from a project folder:
+
+```powershell
+npx codex-company-framework init-company
+```
+
+### From Git Clone
+
 From this repository:
 
 ```powershell
@@ -80,4 +102,3 @@ Do not publish:
 ## License
 
 MIT.
-

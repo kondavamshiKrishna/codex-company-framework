@@ -4,7 +4,9 @@
 *.bak
 __pycache__/
 .pytest_cache/
+.serena/
+node_modules/
+npm-debug.log*
 .env
 .env.*
 !.env.example
-

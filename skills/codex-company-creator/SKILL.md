@@ -22,6 +22,21 @@ memory layout, report folders, prompts, and validation.
 9. Create smoke-test prompts.
 10. Validate files and run one controlled smoke test.
 
+## Questions To Ask
+
+Ask only what cannot be inferred safely from the project.
+
+Minimum questions:
+
+- What project folder should become the company?
+- Where should external company memory and reports be stored?
+- Should the default Codex home be used for skills and agent memory?
+- Should workers start read-only, or can engineering workers edit after owner approval?
+- Are there live databases, Docker stacks, APIs, customer data, secrets, or production systems?
+- What is the first business goal for this company?
+
+If the user is unsure, propose defaults and explain the tradeoff briefly.
+
 ## Default Company Layout
 
 Use this external project-document layout unless the user provides a different
@@ -101,6 +116,22 @@ Every company skill should include:
 - common activation prompts;
 - smoke-test checklist.
 
+## Owner Update Requirement
+
+After creating a company, update the Owner registry:
+
+```text
+C:\Users\<user>\.codex\owner_memory\CURRENT_COMPANIES.md
+```
+
+The Owner must be able to discover:
+
+- what companies exist;
+- which company skill to use;
+- where company memory lives;
+- what workers exist;
+- how to prompt those workers.
+
 ## Smoke Test Checklist
 
 A new company is not ready until a smoke test verifies:
@@ -124,4 +155,3 @@ references\company-template.md
 references\worker-role-template.md
 references\memory-layout-template.md
 ```
-

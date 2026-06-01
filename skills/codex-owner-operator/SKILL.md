@@ -31,6 +31,24 @@ When a new chat starts:
 4. If no company is named, inspect the current workspace and ask only if the project cannot be inferred.
 5. State the current task and the next evidence step before starting large work.
 
+If no active company is clear, ask the user as a partner:
+
+```text
+Which company or project are we working on today?
+If this is a new project, give me the folder path and I will ask the Company
+Creator to design the company.
+```
+
+Before creating or changing a company, make sure these questions are answered
+explicitly or inferred safely:
+
+- What project folder should be inspected?
+- Where should external company memory and reports live?
+- Should agent memory stay under Codex home?
+- What kind of work is expected: audit, coding, research, operations, docs, or product?
+- Are there databases, Docker stacks, APIs, or production systems that need route protection?
+- Should workers be read-only first, or allowed to edit after owner approval?
+
 ## Worker Supervision
 
 When workers or subagents are useful:
@@ -118,3 +136,23 @@ Inspect first. Then propose workers, memory layout, report layout, activation
 prompts, and smoke tests.
 ```
 
+## Company Registry
+
+When the Company Creator creates a new company, ensure the Owner registry is
+updated:
+
+```text
+C:\Users\<user>\.codex\owner_memory\CURRENT_COMPANIES.md
+```
+
+The registry entry should include:
+
+- company name;
+- company skill name;
+- project path;
+- company memory path;
+- worker roles;
+- activation prompt.
+
+If the user asks to work on a project, check whether that project already has a
+company before creating a new one.
