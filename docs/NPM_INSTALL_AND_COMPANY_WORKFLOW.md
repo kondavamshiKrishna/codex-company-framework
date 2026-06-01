@@ -198,6 +198,17 @@ It creates:
 %USERPROFILE%\.codex\agent_memory\<company-id>\<worker-name>\MEMORY.md
 ```
 
+If the company folder already exists and is not empty, `init-company` stops to
+protect existing memory and reports. Only use `--force` when you intentionally
+want to regenerate framework files for that company:
+
+```powershell
+npx codex-company-framework init-company --yes `
+  --project "<drive>:\Projects\MyApp" `
+  --name "My App" `
+  --force
+```
+
 It also creates:
 
 ```text

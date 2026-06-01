@@ -1,93 +1,49 @@
 param(
-    [string]$CodexHome = "$env:USERPROFILE\.codex"
+    [string]$CodexHome = "",
+    [string]$CompanyRoot = "",
+    [string]$WorkerDocumentsRoot = "",
+    [string]$Drive = "",
+    [switch]$Yes
 )
 
 $ErrorActionPreference = "Stop"
 
 $InstallerDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $InstallerDir
-$SourceSkills = Join-Path $RepoRoot "skills"
-$TargetSkills = Join-Path $CodexHome "skills"
-$OwnerMemory = Join-Path $CodexHome "owner_memory"
-$AgentMemory = Join-Path $CodexHome "agent_memory"
+$Cli = Join-Path $RepoRoot "bin\codex-company-framework.js"
 
 Write-Host "Codex Company Framework installer"
-Write-Host "Repo:       $RepoRoot"
-Write-Host "CodexHome:  $CodexHome"
+Write-Host "Repo: $RepoRoot"
 
-if (-not (Test-Path -LiteralPath $SourceSkills)) {
-    throw "Missing source skills folder: $SourceSkills"
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw "Node.js is required. Install Node.js 18 or newer, then rerun this installer."
 }
 
-New-Item -ItemType Directory -Force -Path $TargetSkills | Out-Null
-New-Item -ItemType Directory -Force -Path $OwnerMemory | Out-Null
-New-Item -ItemType Directory -Force -Path $AgentMemory | Out-Null
-
-$SkillNames = @(
-    "codex-owner-operator",
-    "codex-company-creator"
-)
-
-foreach ($SkillName in $SkillNames) {
-    $Source = Join-Path $SourceSkills $SkillName
-    $Target = Join-Path $TargetSkills $SkillName
-
-    if (-not (Test-Path -LiteralPath $Source)) {
-        throw "Missing skill source: $Source"
-    }
-
-    if (Test-Path -LiteralPath $Target) {
-        Remove-Item -LiteralPath $Target -Recurse -Force
-    }
-
-    Copy-Item -LiteralPath $Source -Destination $Target -Recurse
-    Write-Host "Installed skill: $SkillName"
+if (-not (Test-Path -LiteralPath $Cli)) {
+    throw "Missing CLI entrypoint: $Cli"
 }
 
-$OwnerProtocol = Join-Path $OwnerMemory "OWNER_OPERATING_PROTOCOL.md"
-if (-not (Test-Path -LiteralPath $OwnerProtocol)) {
-@"
-# Owner Operating Protocol
+$NodeArgs = @($Cli, "setup")
 
-The Owner is the permanent operating layer across projects.
-
-Core behavior:
-- inspect real files/runtime before making operational claims;
-- treat worker output as draft evidence;
-- verify numbers, routes, and artifacts independently;
-- separate facts, assumptions, unsupported claims, decisions, and next tasks;
-- protect project boundaries and avoid wrong database/runtime usage;
-- update memory only with durable, useful state.
-"@ | Set-Content -LiteralPath $OwnerProtocol -Encoding UTF8
-    Write-Host "Created owner memory: $OwnerProtocol"
+if ($Yes -or $CodexHome -or $CompanyRoot -or $WorkerDocumentsRoot -or $Drive) {
+    $NodeArgs += "--yes"
 }
 
-$Report = Join-Path $CodexHome "codex-company-framework-install-report.txt"
-@"
-Codex Company Framework install report
-Date: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
-CodexHome: $CodexHome
-Installed skills:
-- codex-owner-operator
-- codex-company-creator
-Owner memory: $OwnerMemory
-Agent memory: $AgentMemory
+if ($CodexHome) {
+    $NodeArgs += @("--codex-home", $CodexHome)
+}
 
-Next prompt:
-Use the codex-owner-operator skill.
-Use the codex-company-creator skill.
+if ($CompanyRoot) {
+    $NodeArgs += @("--company-root", $CompanyRoot)
+}
 
-Create a new Codex company for:
-<project path>
+if ($WorkerDocumentsRoot) {
+    $NodeArgs += @("--worker-documents-root", $WorkerDocumentsRoot)
+}
 
-Inspect first. Then propose workers, memory layout, report layout, activation prompts, and smoke tests.
-"@ | Set-Content -LiteralPath $Report -Encoding UTF8
+if ($Drive) {
+    $NodeArgs += @("--drive", $Drive)
+}
 
-Write-Host ""
-Write-Host "Install complete."
-Write-Host "Report: $Report"
-Write-Host ""
-Write-Host "Next prompt:"
-Write-Host "Use the codex-owner-operator skill."
-Write-Host "Use the codex-company-creator skill."
-
+& node @NodeArgs
+exit $LASTEXITCODE

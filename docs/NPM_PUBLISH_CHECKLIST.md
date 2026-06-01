@@ -9,7 +9,7 @@ codex-company-framework
 Current package version:
 
 ```text
-0.1.4
+0.1.5
 ```
 
 ## Pre-Publish Checks

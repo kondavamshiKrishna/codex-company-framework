@@ -10,7 +10,11 @@ $Required = @(
     (Join-Path $CodexHome "skills\codex-company-creator\SKILL.md"),
     (Join-Path $CodexHome "skills\codex-company-creator\agents\openai.yaml"),
     (Join-Path $CodexHome "owner_memory"),
-    (Join-Path $CodexHome "agent_memory")
+    (Join-Path $CodexHome "agent_memory"),
+    (Join-Path $CodexHome "codex-company-framework.yaml"),
+    (Join-Path $CodexHome "owner_memory\FIRST_OWNER_PROMPT.md"),
+    (Join-Path $CodexHome "owner_memory\COMPANY_CREATOR_DISCOVERY_PROMPT_TEMPLATE.md"),
+    (Join-Path $CodexHome "owner_memory\CURRENT_COMPANIES.md")
 )
 
 $Missing = @()
@@ -31,4 +35,3 @@ Write-Host "CodexHome: $CodexHome"
 Write-Host "Skills:"
 Write-Host "- codex-owner-operator"
 Write-Host "- codex-company-creator"
-

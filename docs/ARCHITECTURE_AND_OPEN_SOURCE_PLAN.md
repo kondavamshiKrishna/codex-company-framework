@@ -226,7 +226,7 @@ codex-company-framework\
     uninstall.ps1
     validate.ps1
   examples\
-    konda-style-company-example\
+    domain-company-example\
       README.md
 ```
 
@@ -382,7 +382,7 @@ Before publishing:
 5. Test install into a temporary Codex home.
 6. Create one sample company from a test folder.
 7. Verify new-chat activation works.
-8. Verify no private Konda/PR208 data is included.
+8. Verify no private project data is included.
 9. Add README and license.
 10. Push to GitHub only after final owner review.
 
@@ -428,7 +428,7 @@ Phase 3 - Test locally:
 
 - Validate skills.
 - Create a dummy company.
-- Create a Konda company adapter from current structure.
+- Create an example company adapter from the current structure.
 - Smoke-test new chat activation.
 
 Phase 4 - Prepare GitHub:

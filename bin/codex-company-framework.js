@@ -27,6 +27,8 @@ Examples:
   npx codex-company-framework setup --yes --drive E
   npx codex-company-framework init-company
   npx codex-company-framework init-company --project . --name "My App" --yes
+  npx codex-company-framework init-company --project . --name "My App" --yes --force
+  ccf doctor --codex-home "%USERPROFILE%\\.codex"
   ccf doctor
 `);
 }
@@ -109,6 +111,10 @@ function companyRootForDrive(letter) {
 
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
+}
+
+function directoryHasEntries(dir) {
+  return fs.existsSync(dir) && fs.statSync(dir).isDirectory() && fs.readdirSync(dir).length > 0;
 }
 
 function copyDir(src, dst) {
@@ -242,6 +248,17 @@ function companyRootFromDriveOption() {
 
 function yamlQuote(value) {
   return JSON.stringify(String(value));
+}
+
+function escapeYamlDoubleQuoted(value) {
+  return String(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, " ");
+}
+
+function yamlDoubleQuote(value) {
+  return `"${escapeYamlDoubleQuoted(value)}"`;
 }
 
 function frameworkConfigPath(codexHome) {
@@ -495,7 +512,7 @@ function createCompanySkill({ codexHome, companyId, companyName, companyRoot, pr
   const workerList = workers.map((w) => `- ${w}`).join("\n");
   const skillBody = `---
 name: ${skillName}
-description: Use for ${companyName} project work, company memory, worker coordination, project-specific reports, owner review, and runtime-aware audits. Trigger when the user mentions ${companyName}, ${companyId}, this company, or asks to continue this company's workflow.
+description: ${yamlDoubleQuote(`Use for ${companyName} project work, company memory, worker coordination, project-specific reports, owner review, and runtime-aware audits. Trigger when the user mentions ${companyName}, ${companyId}, this company, or asks to continue this company's workflow.`)}
 ---
 
 # ${companyName} Company
@@ -532,9 +549,9 @@ claims, recommended next task, and memory-update notes.
 Treat worker output as draft evidence. Verify critical claims before accepting.
 `;
   const openaiYaml = `interface:
-  display_name: "${companyName} Company"
-  short_description: "Coordinates ${companyName} workers."
-  default_prompt: "Use the codex-owner-operator skill. Use the ${skillName} skill. Act as Owner for ${companyName}. Read current company memory and continue from the current next task."
+  display_name: ${yamlDoubleQuote(`${companyName} Company`)}
+  short_description: ${yamlDoubleQuote(`Coordinates ${companyName} workers.`)}
+  default_prompt: ${yamlDoubleQuote(`Use the codex-owner-operator skill. Use the ${skillName} skill. Act as Owner for ${companyName}. Read current company memory and continue from the current next task.`)}
 `;
   writeFile(path.join(skillRoot, "SKILL.md"), skillBody);
   writeFile(path.join(skillRoot, "agents", "openai.yaml"), openaiYaml);
@@ -608,7 +625,10 @@ ${workers.map((w) => `- ${w}`).join("\n")}
 function appendCurrentCompany(ownerMemoryRoot, details) {
   const file = path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md");
   writeIfMissing(file, currentCompaniesHeader());
+  const startMarker = `<!-- ccf-company:start ${details.companyId} -->`;
+  const endMarker = `<!-- ccf-company:end ${details.companyId} -->`;
   const entry = `
+${startMarker}
 ## ${details.companyName}
 
 Company ID:
@@ -646,8 +666,14 @@ Use the ${details.skillName} skill.
 
 Act as Owner for ${details.companyName}. Read current company memory and continue from the current next task.
 \`\`\`
+${endMarker}
 `;
-  fs.appendFileSync(file, entry, "utf8");
+  const current = fs.readFileSync(file, "utf8");
+  const escapedStart = startMarker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedEnd = endMarker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const existingBlock = new RegExp(`\\n?${escapedStart}[\\s\\S]*?${escapedEnd}\\n?`, "g");
+  const next = current.replace(existingBlock, "").replace(/\s+$/u, "");
+  fs.writeFileSync(file, `${next}\n${entry}`, "utf8");
 }
 
 async function initCompany() {
@@ -667,7 +693,7 @@ async function initCompany() {
     const companyRoot = getOption("company-root", path.join(config.companyRoot, companyId));
     const workerAnswer = getOption("workers", "product-manager,backend-engineer,frontend-engineer,qa-test-engineer,documentation-writer,independent-validation-agent");
     const workers = workerAnswer.split(",").map((w) => slugify(w)).filter(Boolean);
-    return createCompany({ codexHome, config, projectPath, companyName, companyId, companyRoot, workers });
+    return createCompany({ codexHome, config, projectPath, companyName, companyId, companyRoot, workers, force: hasFlag("force") });
   }
 
   const rl = rlInterface();
@@ -695,7 +721,7 @@ async function initCompany() {
     const defaultName = titleCase(path.basename(path.resolve(projectPath))) || "New Project";
     explain("Company name", [
       "This is the human-readable name the Owner will use for this project.",
-      "Example: VideoNut V2, Konda Advisor PR208, CRM Dashboard.",
+      "Example: Video Editor V2, Trading Advisor, CRM Dashboard.",
     ]);
     const companyName = await ask(rl, "Company name", defaultName);
     explain("Company ID", [
@@ -717,13 +743,16 @@ async function initCompany() {
     const workerAnswer = await ask(rl, "Worker roles, comma separated", defaultWorkers);
     const workers = workerAnswer.split(",").map((w) => slugify(w)).filter(Boolean);
 
-    createCompany({ codexHome, config, projectPath, companyName, companyId, companyRoot, workers });
+    createCompany({ codexHome, config, projectPath, companyName, companyId, companyRoot, workers, force: hasFlag("force") });
   } finally {
     rl.close();
   }
 }
 
-function createCompany({ codexHome, config, projectPath, companyName, companyId, companyRoot, workers }) {
+function createCompany({ codexHome, config, projectPath, companyName, companyId, companyRoot, workers, force = false }) {
+  if (directoryHasEntries(companyRoot) && !force) {
+    throw new Error(`Company root already exists and is not empty: ${companyRoot}. Use --force only when you intentionally want to regenerate framework files for this company.`);
+  }
   ensureDir(companyRoot);
   copyCompanyTemplates(companyRoot);
   for (const worker of workers) {
@@ -794,7 +823,7 @@ Act as Owner for ${companyName}. Read current company memory and continue from t
 }
 
 function doctor() {
-  const codexHome = defaultCodexHome();
+  const codexHome = getOption("codex-home", defaultCodexHome());
   const checks = [
     ["Codex home", codexHome],
     ["Owner skill", path.join(codexHome, "skills", "codex-owner-operator", "SKILL.md")],

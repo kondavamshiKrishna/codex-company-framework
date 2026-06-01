@@ -92,6 +92,10 @@ Or double-click:
 installer\install.bat
 ```
 
+The clone installer delegates to the same setup command used by npm, so it
+creates the framework config, Owner prompt files, memory roots, and global
+skills.
+
 ## New Chat Usage
 
 Start with the Owner:
@@ -146,6 +150,10 @@ Create a new Codex company for:
 Inspect first. Then propose workers, memory layout, report layout, activation
 prompts, and smoke tests.
 ```
+
+If a company root already exists, `init-company` stops instead of overwriting
+memory. Use `--force` only when you intentionally want to regenerate framework
+files for that company.
 
 ## What This Repository Contains
 
