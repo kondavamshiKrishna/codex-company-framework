@@ -45,6 +45,7 @@ The Owner should specify the phase.
 - discovery: inspect and propose only; do not write files;
 - documentation: write memory/docs/prompts only;
 - implementation: create company skill, workers, memories, and report folders;
+- repair: fix an existing company's registry, skill path, memory root, report root, or activation prompt without doing project work;
 - validation: run smoke checks and verify activation;
 - operations: prepare first worker task.
 
@@ -81,6 +82,10 @@ Stop and ask the Owner before creating files if any of these are unclear:
 - whether the user wants documentation-only or full implementation.
 
 Do not invent production routes, database names, or secret locations.
+
+If the request is to repair an existing company, do only company-framework
+repair work. Do not continue the product/project task until the Owner confirms
+that registry, skill, memory, report, and agent-memory paths are consistent.
 
 ## Default Company Layout
 

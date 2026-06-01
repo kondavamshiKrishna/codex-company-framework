@@ -20,7 +20,7 @@ From npm:
 npx codex-company-framework setup
 ```
 
-Normal setup asks only for the external company memory/report locations.
+Normal setup asks only for the external company memory drive.
 Internal Codex paths are automatic. Use `--advanced` only if you need to change
 Codex home, owner memory, or agent memory paths.
 
@@ -55,7 +55,10 @@ Use the codex-owner-operator skill.
 Act as Owner and my AI partner. I am opening this project in Codex IDE.
 
 First, check whether this project already has a company. If it does, tell me
-which company skill to use and continue from its current memory.
+which company skill to use only after the company integrity gate passes.
+
+If any company path, registry, skill, or memory check fails, do not continue
+project work. Report the mismatch and give the repair step first.
 
 If it does not have a company yet, ask me for the project folder if needed,
 then prepare the first discovery prompt that I should paste into a separate

@@ -38,10 +38,10 @@ The setup wizard asks:
 
 ```text
 External memory drive
-Worker documents/reports root
 ```
 
-It does not ask normal users for internal Codex paths. These are automatic:
+It does not ask normal users for internal Codex paths or a separate worker
+documents path. These are automatic:
 
 ```text
 Codex home:        %USERPROFILE%\.codex
@@ -115,6 +115,10 @@ It also saves first-use prompt files:
 
 The terminal prints the same prompt text so the user knows exactly what to do
 next in Codex IDE.
+
+If existing companies point at old locations or missing memory folders, setup
+prints company-integrity warnings. Do not continue project work until those are
+repaired.
 
 By default, setup installs the two permanent global agents as Codex skills:
 
@@ -235,8 +239,12 @@ Use the codex-owner-operator skill.
 
 Act as Owner and my AI partner. I am opening this project in Codex IDE.
 
-First, check whether this project already has a company. If it does, tell me
-which company skill to use and continue from its current memory.
+First, run the company integrity gate. If this project already has a company,
+tell me which company skill to use only after registry, skill, memory, report,
+project, and agent-memory paths are internally consistent.
+
+If any company path, registry, skill, or memory check fails, do not continue
+project work. Report the mismatch and give the repair step first.
 
 If it does not have a company yet, ask me for the project folder if needed,
 then prepare the first discovery prompt that I should paste into a separate
@@ -251,8 +259,10 @@ For an existing company:
 Use the codex-owner-operator skill.
 Use the <company-id>-company skill.
 
-Act as Owner for <company name>. Read current company memory and continue from
-the current next task.
+Act as Owner for <company name>. Run the company integrity gate first. If
+registry, skill, memory, report, project, or agent-memory paths disagree, stop
+and report the repair step before doing project work. If integrity passes, read
+current company memory and continue from the current next task.
 ```
 
 ## 5. Owner And User Relationship
@@ -339,6 +349,10 @@ User copies the final Company Creator handoff back to Owner. Owner verifies:
 - report folders exist;
 - activation prompt is correct;
 - smoke test passes or has a clear blocker.
+
+If verification reports stale paths, missing company memory, or a registry/skill
+mismatch, the Owner must stop and repair the company registration before asking
+workers to audit, code, research, or generate assets.
 
 ## 7. Company Creator Responsibilities
 

@@ -34,8 +34,7 @@ npx github:kondavamshiKrishna/codex-company-framework setup
 
 The setup command asks for:
 
-- external memory drive;
-- worker documents/reports root.
+- external memory drive.
 
 By default, internal Codex paths are automatic:
 
@@ -58,6 +57,10 @@ available. It then creates:
 That folder stores company documents, Owner project memory, worker reports,
 prompts, and evidence.
 
+Normal setup uses the selected drive for both company memory and worker reports.
+Use `--advanced` or `--worker-documents-root` only if you intentionally want a
+different report root.
+
 After setup, the terminal prints the exact first prompt to paste into Codex IDE.
 It also saves prompt files under:
 
@@ -65,6 +68,10 @@ It also saves prompt files under:
 %USERPROFILE%\.codex\owner_memory\FIRST_OWNER_PROMPT.md
 %USERPROFILE%\.codex\owner_memory\COMPANY_CREATOR_DISCOVERY_PROMPT_TEMPLATE.md
 ```
+
+If existing companies point at an old drive or missing memory folder, setup and
+`doctor` print company-integrity warnings. Repair those before starting project
+work.
 
 After setup, create a company from a project folder:
 
@@ -118,8 +125,12 @@ Use the codex-owner-operator skill.
 
 Act as Owner and my AI partner. I am opening this project in Codex IDE.
 
-First, check whether this project already has a company. If it does, tell me
-which company skill to use and continue from its current memory.
+First, run the company integrity gate. If this project already has a company,
+tell me which company skill to use only after registry, skill, memory, report,
+project, and agent-memory paths are internally consistent.
+
+If any company path, registry, skill, or memory check fails, do not continue
+project work. Report the mismatch and give the repair step first.
 
 If it does not have a company yet, ask me for the project folder if needed,
 then prepare the first discovery prompt that I should paste into a separate
@@ -134,8 +145,10 @@ Continue an existing company:
 Use the codex-owner-operator skill.
 Use the <company-skill-name> skill.
 
-Act as Owner for <company name>. Read current company memory and continue from
-the current next task.
+Act as Owner for <company name>. Run the company integrity gate first. If
+registry, skill, memory, report, project, or agent-memory paths disagree, stop
+and report the repair step before doing project work. If integrity passes, read
+current company memory and continue from the current next task.
 ```
 
 Create a new company:

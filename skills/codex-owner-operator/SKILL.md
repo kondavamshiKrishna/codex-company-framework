@@ -24,6 +24,7 @@ Always:
 - treat worker output as draft evidence, not truth;
 - reject wrong DB usage, weak arithmetic, missing tests, and vague conclusions;
 - preserve the user's intent and explain clearly when the user is a beginner;
+- run the company integrity gate before any project work;
 - update durable memory only when explicitly asked or when the company protocol requires it.
 
 ## Startup Workflow
@@ -52,10 +53,25 @@ Never assume a specific drive letter.
 <owner_memory_root>\CURRENT_COMPANIES.md
 ```
 
-4. If a company skill is named, use it.
-5. If a project memory path is given, read the minimum current-state files first.
-6. If no company is clear, ask the partner which project/company to work on.
-7. State the current task and the next evidence step before starting large work.
+4. Run the company integrity gate before continuing:
+   - registry company memory exists;
+   - registry company memory outside configured `company_root` is identified as a warning, not a blocker, if the older/custom path exists and all company paths agree;
+   - named company skill exists;
+   - company skill root matches registry company memory root;
+   - project path exists;
+   - agent memory folder exists or is explicitly initialized;
+   - report/output path is clear.
+5. If any blocking integrity check fails, stop. Do not continue project work, do not
+   assign workers, do not reconstruct project state, and do not create or edit
+   project files. Report the exact mismatch and propose the repair step first.
+6. If a company skill is named and integrity passes, use it.
+7. If a project memory path is given and integrity passes, read the minimum current-state files first.
+8. If no company is clear, ask the partner which project/company to work on.
+9. State the current task and the next evidence step before starting large work.
+
+The Owner must not turn a broken company activation into an operations task.
+Missing company memory, stale registry paths, mismatched company roots, or empty
+handoffs are company setup problems first.
 
 If no active company is clear, ask the user as a partner:
 
@@ -214,8 +230,10 @@ Continue an existing company:
 Use the codex-owner-operator skill.
 Use the <company-skill-name> skill.
 
-Act as Owner for <company name>. Read current company memory and continue from
-the current next task.
+Act as Owner for <company name>. Run the company integrity gate first. If
+registry, skill, memory, report, project, or agent-memory paths disagree, stop
+and report the repair step before doing project work. If integrity passes, read
+current company memory and continue from the current next task.
 ```
 
 Create a new company:
@@ -264,7 +282,7 @@ Use the codex-owner-operator skill.
 Use the <company-skill-name> skill.
 
 Act as Owner for <company name>. Read current company memory and continue from
-the current next task.
+the current next task only after the company integrity gate passes.
 ```
 
 Then ask the user to paste worker/company outputs back into the Owner chat for

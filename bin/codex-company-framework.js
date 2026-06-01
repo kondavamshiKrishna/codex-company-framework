@@ -109,6 +109,26 @@ function companyRootForDrive(letter) {
   return `${letter.toUpperCase()}:\\Codex\\Companies`;
 }
 
+function isAbsolutePath(value) {
+  return path.isAbsolute(String(value || ""));
+}
+
+function normalizeComparePath(value) {
+  return path.resolve(String(value || "")).replace(/[\\/]+$/u, "").toLowerCase();
+}
+
+function isPathInside(child, parent) {
+  const childPath = normalizeComparePath(child);
+  const parentPath = normalizeComparePath(parent);
+  return childPath === parentPath || childPath.startsWith(`${parentPath.toLowerCase()}${path.sep}`);
+}
+
+function resolvePathInput(value, basePath) {
+  const input = String(value || "").trim();
+  if (!input) return basePath;
+  return isAbsolutePath(input) ? input : path.join(basePath, input);
+}
+
 function ensureDir(dir) {
   fs.mkdirSync(dir, { recursive: true });
 }
@@ -320,7 +340,16 @@ Core behavior:
 - verify numbers, routes, and artifacts independently;
 - separate facts, assumptions, unsupported claims, decisions, and next tasks;
 - protect project boundaries and avoid wrong database/runtime usage;
+- run the company integrity gate before project work;
 - update memory only with durable, useful state.
+
+Company integrity gate:
+- read framework config, owner registry, named company skill, and company memory;
+- verify project path, company root, company memory, report root, and agent memory;
+- treat missing memory or registry/skill conflict as blocking; treat a company
+  outside the current default company_root as a warning if all registered paths exist and agree;
+- if blocking checks fail, stop project work;
+- report the inconsistency and propose a repair prompt before assigning workers or editing project files.
 
 Standard new-chat activation:
 
@@ -329,7 +358,9 @@ Use the codex-owner-operator skill.
 Use the <company-skill-name> skill.
 
 Act as Owner for <company name>. Read current company memory and continue from
-the current next task.
+the current next task only after the company integrity gate passes. If registry,
+skill, memory, report, project, or agent-memory paths disagree, stop and report
+the repair step before doing project work.
 \`\`\`
 `;
 }
@@ -352,8 +383,18 @@ First read the framework config if it exists:
 Use that config to know the selected external company memory root, worker
 documents/report root, Owner memory root, and agent memory root.
 
-First, check whether this project already has a company. If it does, tell me
-which company skill to use and continue from its current memory.
+First, run the company integrity gate:
+- read the Owner registry;
+- check whether this project already has a company;
+- if a company exists, verify its registry entry, company skill, company root,
+  memory folder, report folder, and agent memory are internally consistent.
+
+If any blocking company path, registry, skill, or memory check fails, do not
+continue project work and do not tell me to open another chat yet. Report the
+mismatch and give the repair step first.
+
+If the company exists and integrity passes, tell me which company skill to use
+and continue from its current memory.
 
 If it does not have a company yet, ask me for the project folder if needed,
 then prepare the first discovery prompt that I should paste into a separate
@@ -441,7 +482,7 @@ async function setup() {
     const ownerMemoryRoot = getOption("owner-memory-root", path.join(codexHome, "owner_memory"));
     const agentMemoryRoot = getOption("agent-memory-root", path.join(codexHome, "agent_memory"));
     const companyRoot = getOption("company-root", companyRootFromDriveOption() || defaultCompanyRoot());
-    const workerDocumentsRoot = getOption("worker-documents-root", companyRoot);
+    const workerDocumentsRoot = resolvePathInput(getOption("worker-documents-root", companyRoot), companyRoot);
 
     ensureDir(codexHome);
     ensureDir(ownerMemoryRoot);
@@ -451,10 +492,12 @@ async function setup() {
     installSkills(codexHome);
     writeIfMissing(path.join(ownerMemoryRoot, "OWNER_OPERATING_PROTOCOL.md"), ownerProtocol());
     writeIfMissing(path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md"), currentCompaniesHeader());
-    writeFrameworkConfig({ codexHome, ownerMemoryRoot, agentMemoryRoot, companyRoot, workerDocumentsRoot });
+    const config = { codexHome, ownerMemoryRoot, agentMemoryRoot, companyRoot, workerDocumentsRoot };
+    writeFrameworkConfig(config);
 
     console.log("Setup complete.");
     console.log(`Config: ${frameworkConfigPath(codexHome)}`);
+    printCompanyHealthReport(config);
     printSetupNextSteps(codexHome, companyRoot);
     return;
   }
@@ -478,12 +521,12 @@ async function setup() {
 
     const companyRoot = await askExternalCompanyRoot(rl);
 
-    explain("Worker documents/reports root", [
-      "This is where worker-generated reports, evidence, drafts, and final documents are stored.",
-      "For most users this should be the same as the company memory root.",
-      "Choose a different path only if you want reports on another drive.",
-    ]);
-    const workerDocumentsRoot = await ask(rl, "Worker documents/reports root", companyRoot);
+    const workerDocumentsRoot = advanced
+      ? resolvePathInput(
+          await ask(rl, "Worker documents/reports root", companyRoot),
+          companyRoot
+        )
+      : companyRoot;
 
     ensureDir(codexHome);
     ensureDir(ownerMemoryRoot);
@@ -494,12 +537,14 @@ async function setup() {
 
     writeIfMissing(path.join(ownerMemoryRoot, "OWNER_OPERATING_PROTOCOL.md"), ownerProtocol());
     writeIfMissing(path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md"), currentCompaniesHeader());
-    writeFrameworkConfig({ codexHome, ownerMemoryRoot, agentMemoryRoot, companyRoot, workerDocumentsRoot });
+    const config = { codexHome, ownerMemoryRoot, agentMemoryRoot, companyRoot, workerDocumentsRoot };
+    writeFrameworkConfig(config);
 
     console.log("\nSetup complete.");
     console.log(`Config: ${frameworkConfigPath(codexHome)}`);
     console.log(`Owner memory: ${ownerMemoryRoot}`);
     console.log(`Company root: ${companyRoot}`);
+    printCompanyHealthReport(config);
     printSetupNextSteps(codexHome, companyRoot);
   } finally {
     rl.close();
@@ -531,11 +576,15 @@ ${companyRoot}
 
 ## Startup
 
-1. Read \`memory/CURRENT_STATE.md\`.
-2. Confirm the project path exists.
-3. Inspect real files/runtime before claims.
-4. Use workers only when useful.
-5. Write reports under this company root.
+1. Read the framework config if it exists at \`%USERPROFILE%\\.codex\\codex-company-framework.yaml\`.
+2. Read the Owner registry at \`<owner_memory_root>\\CURRENT_COMPANIES.md\`.
+3. Verify this company skill, registry company memory, this company root, project path, and agent memory are consistent.
+4. If any path is missing or inconsistent, stop project work and report the repair needed first.
+5. Read \`memory/CURRENT_STATE.md\` only after integrity passes.
+6. Confirm the project path exists.
+7. Inspect real files/runtime before claims.
+8. Use workers only when useful.
+9. Write reports under this company root.
 
 ## Workers
 
@@ -551,7 +600,7 @@ Treat worker output as draft evidence. Verify critical claims before accepting.
   const openaiYaml = `interface:
   display_name: ${yamlDoubleQuote(`${companyName} Company`)}
   short_description: ${yamlDoubleQuote(`Coordinates ${companyName} workers.`)}
-  default_prompt: ${yamlDoubleQuote(`Use the codex-owner-operator skill. Use the ${skillName} skill. Act as Owner for ${companyName}. Read current company memory and continue from the current next task.`)}
+  default_prompt: ${yamlDoubleQuote(`Use the codex-owner-operator skill. Use the ${skillName} skill. Act as Owner for ${companyName}. Run the company integrity gate first. If integrity passes, read current company memory and continue from the current next task.`)}
 `;
   writeFile(path.join(skillRoot, "SKILL.md"), skillBody);
   writeFile(path.join(skillRoot, "agents", "openai.yaml"), openaiYaml);
@@ -664,7 +713,7 @@ Activation:
 Use the codex-owner-operator skill.
 Use the ${details.skillName} skill.
 
-Act as Owner for ${details.companyName}. Read current company memory and continue from the current next task.
+Act as Owner for ${details.companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, or agent-memory paths disagree, stop and report the repair step before doing project work. If integrity passes, read current company memory and continue from the current next task.
 \`\`\`
 ${endMarker}
 `;
@@ -791,7 +840,7 @@ Last updated: ${new Date().toISOString()}
 Use the codex-owner-operator skill.
 Use the ${skillName} skill.
 
-Act as Owner for ${companyName}. Read current company memory and continue from the current next task.
+Act as Owner for ${companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, or agent-memory paths disagree, stop and report the repair step before doing project work. If integrity passes, read current company memory and continue from the current next task.
 \`\`\`
 `);
   writeFile(creatorPromptFile, `# Company Creator Discovery Prompt
@@ -814,7 +863,7 @@ ${companyCreatorDiscoveryPrompt(projectPath)}
   console.log(`Use the codex-owner-operator skill.
 Use the ${skillName} skill.
 
-Act as Owner for ${companyName}. Read current company memory and continue from the current next task.`);
+Act as Owner for ${companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, or agent-memory paths disagree, stop and report the repair step before doing project work. If integrity passes, read current company memory and continue from the current next task.`);
   console.log("");
   console.log("4. If the Owner asks for worker/company output, open the requested worker or");
   console.log("   Company Creator chat, paste the Owner's prompt there, then copy the result");
@@ -822,8 +871,102 @@ Act as Owner for ${companyName}. Read current company memory and continue from t
   return { companyRoot, skillName };
 }
 
+function extractRegistryField(block, label) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = block.match(new RegExp(`${escaped}:\\s*\\n\\s*\`\`\`text\\s*\\n([\\s\\S]*?)\\n\\s*\`\`\``, "i"));
+  return match ? match[1].trim() : "";
+}
+
+function parseCompanyRegistry(ownerMemoryRoot) {
+  const file = path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md");
+  if (!fs.existsSync(file)) return [];
+  const content = fs.readFileSync(file, "utf8");
+  const blocks = content.split(/\n(?=## )/g).filter((block) => /^## /m.test(block));
+  return blocks.map((block) => {
+    const titleMatch = block.match(/^##\s+(.+)$/m);
+    const companyName = titleMatch ? titleMatch[1].trim() : "Unknown Company";
+    const companyId = extractRegistryField(block, "Company ID") || slugify(companyName);
+    const skillName = extractRegistryField(block, "Company skill");
+    const projectPath = extractRegistryField(block, "Project path") || extractRegistryField(block, "Project repo");
+    const companyMemory = extractRegistryField(block, "Company memory");
+    return { companyName, companyId, skillName, projectPath, companyMemory };
+  });
+}
+
+function extractSkillCompanyRoot(skillFile) {
+  if (!fs.existsSync(skillFile)) return "";
+  const content = fs.readFileSync(skillFile, "utf8");
+  const match = content.match(/Company root:\s*\n\s*```text\s*\n([\s\S]*?)\n\s*```/i);
+  return match ? match[1].trim() : "";
+}
+
+function companyRootFromMemoryPath(companyMemory) {
+  if (!companyMemory) return "";
+  return path.basename(companyMemory).toLowerCase() === "memory" ? path.dirname(companyMemory) : companyMemory;
+}
+
+function collectCompanyHealth(config) {
+  const companies = parseCompanyRegistry(config.ownerMemoryRoot);
+  const findings = [];
+  for (const company of companies) {
+    if (!company.skillName) {
+      findings.push({ level: "FAIL", company, message: "Registry entry has no company skill." });
+      continue;
+    }
+    const skillFile = path.join(config.codexHome, "skills", company.skillName, "SKILL.md");
+    const skillExists = fs.existsSync(skillFile);
+    if (!skillExists) {
+      findings.push({ level: "FAIL", company, message: `Company skill is missing: ${skillFile}` });
+    }
+    if (company.projectPath && !fs.existsSync(company.projectPath)) {
+      findings.push({ level: "FAIL", company, message: `Project path is missing: ${company.projectPath}` });
+    }
+    if (!company.companyMemory) {
+      findings.push({ level: "FAIL", company, message: "Registry entry has no company memory path." });
+    } else {
+      if (!fs.existsSync(company.companyMemory)) {
+        findings.push({ level: "FAIL", company, message: `Company memory folder is missing: ${company.companyMemory}` });
+      }
+      if (!isPathInside(company.companyMemory, config.companyRoot)) {
+        findings.push({ level: "WARN", company, message: `Company memory is outside the current default company_root. This is allowed for older/custom companies if the skill, registry, and memory folder all agree. memory=${company.companyMemory} company_root=${config.companyRoot}` });
+      }
+    }
+    const skillCompanyRoot = extractSkillCompanyRoot(skillFile);
+    const registryCompanyRoot = companyRootFromMemoryPath(company.companyMemory);
+    if (skillCompanyRoot && registryCompanyRoot && normalizeComparePath(skillCompanyRoot) !== normalizeComparePath(registryCompanyRoot)) {
+      findings.push({ level: "FAIL", company, message: `Company skill root disagrees with registry memory root. skill=${skillCompanyRoot} registry=${registryCompanyRoot}` });
+    }
+    const agentMemory = path.join(config.agentMemoryRoot, company.companyId);
+    if (!fs.existsSync(agentMemory)) {
+      findings.push({ level: "WARN", company, message: `Agent memory folder is missing or not initialized: ${agentMemory}` });
+    }
+  }
+  return findings;
+}
+
+function printCompanyHealthReport(config) {
+  const findings = collectCompanyHealth(config);
+  if (findings.length === 0) {
+    return true;
+  }
+  console.log("");
+  console.log("Company integrity warnings");
+  console.log("Fix these before continuing project work:");
+  for (const finding of findings) {
+    console.log(`${finding.level} ${finding.company.companyName}: ${finding.message}`);
+  }
+  return findings.every((finding) => finding.level !== "FAIL");
+}
+
 function doctor() {
   const codexHome = getOption("codex-home", defaultCodexHome());
+  const config = readFrameworkConfig(codexHome) || {
+    codexHome,
+    ownerMemoryRoot: path.join(codexHome, "owner_memory"),
+    agentMemoryRoot: path.join(codexHome, "agent_memory"),
+    companyRoot: defaultCompanyRoot(),
+    workerDocumentsRoot: defaultCompanyRoot(),
+  };
   const checks = [
     ["Codex home", codexHome],
     ["Owner skill", path.join(codexHome, "skills", "codex-owner-operator", "SKILL.md")],
@@ -838,7 +981,8 @@ function doctor() {
     ok = ok && exists;
     console.log(`${exists ? "PASS" : "FAIL"} ${label}: ${target}`);
   }
-  process.exitCode = ok ? 0 : 1;
+  const companyOk = printCompanyHealthReport(config);
+  process.exitCode = ok && companyOk ? 0 : 1;
 }
 
 function printOwnerPrompt() {
