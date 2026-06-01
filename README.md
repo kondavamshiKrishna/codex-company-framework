@@ -5,7 +5,7 @@ owner-led software company.
 
 It separates:
 
-- Owner: permanent project-control and review mindset.
+- Owner: permanent project-control and review mindset; the user's AI partner.
 - Company Creator: creates project-specific companies and worker teams.
 - Workers: project-specific specialist agents.
 
@@ -67,6 +67,19 @@ installer\install.bat
 ```
 
 ## New Chat Usage
+
+Start with the Owner:
+
+```text
+Use the codex-owner-operator skill.
+
+Act as Owner and my AI partner. Which company or project are we working on today?
+```
+
+If this is a new project, the Owner prepares the first prompt for a separate
+Company Creator chat. The Company Creator proposes the company. The user copies
+that output back to the Owner. The Owner reviews, corrects, and only then
+approves company creation.
 
 Continue an existing company:
 

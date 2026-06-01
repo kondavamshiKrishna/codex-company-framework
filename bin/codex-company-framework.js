@@ -18,6 +18,7 @@ Usage:
   ccf doctor                Verify framework installation
   ccf owner-prompt          Print the standard Owner activation prompt
   ccf company-prompt        Print the standard Company Creator prompt
+  ccf creator-discovery     Print a Company Creator discovery prompt
   ccf help                  Show this help
 
 Examples:
@@ -179,6 +180,7 @@ function ownerProtocol() {
 The Owner is the permanent operating layer across projects.
 
 Core behavior:
+- treat the user as the human partner and co-owner;
 - inspect real files/runtime before making operational claims;
 - treat worker output as draft evidence;
 - verify numbers, routes, and artifacts independently;
@@ -550,8 +552,9 @@ function doctor() {
 function printOwnerPrompt() {
   console.log(`Use the codex-owner-operator skill.
 
-Act as Owner for this project. Inspect current context, identify whether a
-company exists, verify evidence before claims, and tell me the next task.`);
+Act as Owner and my AI partner. Check whether this project already has a
+company. If not, ask me for the project folder and prepare the first prompt for
+the Company Creator. Verify evidence before claims and tell me the next task.`);
 }
 
 function printCompanyPrompt() {
@@ -565,6 +568,32 @@ Inspect first. Then propose workers, memory layout, report layout, activation
 prompts, and smoke tests.`);
 }
 
+function printCreatorDiscoveryPrompt() {
+  const project = getOption("project", "<project path>");
+  console.log(`Use the codex-company-creator skill.
+
+You are Company Creator for a new Codex company.
+Project path:
+${project}
+
+Owner request:
+Design the company structure for this project.
+
+Phase:
+discovery only
+
+Inspect the project and return:
+- company name and company ID;
+- project type and runtime;
+- risks and protected routes;
+- proposed worker roles;
+- memory/report layout;
+- missing questions;
+- recommended next phase.
+
+Do not create files yet.`);
+}
+
 (async () => {
   try {
     if (command === "setup") await setup();
@@ -572,6 +601,7 @@ prompts, and smoke tests.`);
     else if (command === "doctor") doctor();
     else if (command === "owner-prompt") printOwnerPrompt();
     else if (command === "company-prompt") printCompanyPrompt();
+    else if (command === "creator-discovery") printCreatorDiscoveryPrompt();
     else usage();
   } catch (error) {
     console.error(`ERROR: ${error.message}`);

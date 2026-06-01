@@ -9,18 +9,37 @@ Use this skill to design and create project-specific Codex companies. A company
 is a reusable operating structure for a project: company skill, worker roles,
 memory layout, report folders, prompts, and validation.
 
+The Company Creator works for the Owner. It should produce proposals, ask for
+missing decisions, create files only in an approved phase, and report the final
+company registry details back to the Owner.
+
 ## Company Creation Workflow
 
-1. Inspect the project folder before designing roles.
-2. Identify project type, runtime, data stores, risk areas, and user goals.
-3. Propose the company name and company skill name.
-4. Propose worker roles only where they create useful separation.
-5. Define memory and report layout.
-6. Define runtime, DB, API, and environment routing rules.
-7. Define worker permission levels.
-8. Create company skill and worker persona templates after owner approval.
-9. Create smoke-test prompts.
-10. Validate files and run one controlled smoke test.
+1. Read the Owner request and phase.
+2. Inspect the project folder before designing roles.
+3. Identify project type, runtime, data stores, risk areas, and user goals.
+4. Propose the company name and company skill name.
+5. Propose worker roles only where they create useful separation.
+6. Define memory and report layout.
+7. Define runtime, DB, API, and environment routing rules.
+8. Define worker permission levels.
+9. Stop and ask if any required path, permission, runtime route, or business goal is missing.
+10. Create company skill and worker persona templates only after Owner approval.
+11. Create smoke-test prompts.
+12. Validate files and run one controlled smoke test when allowed.
+13. Return the final handoff and Owner registry entry.
+
+## Phase Rules
+
+The Owner should specify the phase.
+
+- discovery: inspect and propose only; do not write files;
+- documentation: write memory/docs/prompts only;
+- implementation: create company skill, workers, memories, and report folders;
+- validation: run smoke checks and verify activation;
+- operations: prepare first worker task.
+
+If the phase is missing, default to discovery and do not create files.
 
 ## Questions To Ask
 
@@ -36,6 +55,23 @@ Minimum questions:
 - What is the first business goal for this company?
 
 If the user is unsure, propose defaults and explain the tradeoff briefly.
+
+## Stop And Ask Rules
+
+Stop and ask the Owner before creating files if any of these are unclear:
+
+- project path;
+- company root;
+- Codex home;
+- owner memory root;
+- agent memory root;
+- worker report/document root;
+- whether workers may edit code;
+- whether the project touches production systems;
+- database/runtime route protection;
+- whether the user wants documentation-only or full implementation.
+
+Do not invent production routes, database names, or secret locations.
 
 ## Default Company Layout
 
@@ -131,6 +167,25 @@ The Owner must be able to discover:
 - where company memory lives;
 - what workers exist;
 - how to prompt those workers.
+
+Return this exact handoff block to the Owner:
+
+```text
+Company created:
+Company name:
+Company ID:
+Company skill:
+Project path:
+Company memory:
+Owner registry updated:
+Workers:
+Activation prompt:
+Smoke-test report:
+Missing follow-ups:
+```
+
+If the Owner registry cannot be updated, state that clearly and provide the
+exact registry entry for the Owner to apply.
 
 ## Smoke Test Checklist
 

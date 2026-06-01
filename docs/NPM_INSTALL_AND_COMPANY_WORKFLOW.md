@@ -70,6 +70,16 @@ C:\Users\<user>\.codex\agent_memory
 C:\Users\<user>\.codex\codex-company-framework.yaml
 ```
 
+By default, setup installs the two permanent global agents as Codex skills:
+
+```text
+codex-owner-operator
+codex-company-creator
+```
+
+The Owner is the user's AI partner and project authority. The Company Creator is
+called by the Owner when a new project needs a company structure.
+
 ## 2. Config YAML
 
 The framework writes this file:
@@ -153,9 +163,10 @@ After setup, use:
 ```text
 Use the codex-owner-operator skill.
 
-Act as Owner. Which company or project are we working on today?
-If this is a new project, ask me for the folder path and then use the Company
-Creator to design the company.
+Act as Owner and my AI partner. Which company or project are we working on today?
+If this is a new project, ask me for the folder path, prepare the first Company
+Creator prompt, review the Company Creator output, and approve creation only
+after evidence and paths are clear.
 ```
 
 For an existing company:
@@ -170,7 +181,9 @@ the current next task.
 
 ## 5. Owner And User Relationship
 
-The Owner should treat the user as a partner.
+The Owner should treat the user as a partner. The user and Owner are co-owners
+of the company. The Owner should reduce the user's manual burden and ask only
+for important decisions.
 
 The Owner should ask:
 
@@ -185,7 +198,73 @@ Are there live databases, Docker stacks, APIs, or production systems to protect?
 The Owner should not ask unnecessary questions when the project can be inferred
 from the current workspace or existing company registry.
 
-## 6. Company Creator Responsibilities
+## 6. Two-Chat Company Creation Workflow
+
+Use this when creating a new company.
+
+### Chat 1: Owner
+
+User starts:
+
+```text
+Use the codex-owner-operator skill.
+
+Act as Owner and my AI partner. I want to create a company for this project:
+<project path>
+```
+
+Owner responds with a Company Creator prompt.
+
+### Chat 2: Company Creator
+
+User opens a second chat and pastes the Owner's prompt:
+
+```text
+Use the codex-company-creator skill.
+
+You are Company Creator for a new Codex company.
+Project path:
+<project path>
+
+Phase:
+discovery only
+
+Inspect the project and return the proposed company design.
+Do not create files yet.
+```
+
+Company Creator returns a proposal. User copies that output back to the Owner.
+
+### Back To Chat 1: Owner Review
+
+Owner reviews:
+
+```text
+Verdict:
+Accepted:
+Corrections needed:
+Missing decisions:
+Approved phase:
+Next prompt for Company Creator:
+```
+
+If approved, the Owner gives the user the implementation prompt for Company
+Creator. Company Creator creates the company, updates the Owner registry, and
+returns the final handoff.
+
+### Final Owner Verification
+
+User copies the final Company Creator handoff back to Owner. Owner verifies:
+
+- company skill exists;
+- company memory exists;
+- owner registry is updated;
+- worker memories exist;
+- report folders exist;
+- activation prompt is correct;
+- smoke test passes or has a clear blocker.
+
+## 7. Company Creator Responsibilities
 
 The Company Creator should:
 
@@ -200,7 +279,7 @@ The Company Creator should:
 9. write a smoke-test prompt;
 10. tell the user what to paste in a new chat.
 
-## 7. Commands
+## 8. Commands
 
 ```powershell
 npx codex-company-framework setup
@@ -208,6 +287,7 @@ npx codex-company-framework init-company
 npx codex-company-framework doctor
 npx codex-company-framework owner-prompt
 npx codex-company-framework company-prompt
+npx codex-company-framework creator-discovery --project "D:\Projects\MyApp"
 ```
 
 If installed globally:
@@ -219,7 +299,7 @@ ccf init-company
 ccf doctor
 ```
 
-## 8. Publishing To npm
+## 9. Publishing To npm
 
 Publishing requires an npm account login on the machine:
 
