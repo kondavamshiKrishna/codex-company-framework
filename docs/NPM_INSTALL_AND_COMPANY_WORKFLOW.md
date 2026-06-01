@@ -37,7 +37,7 @@ npx codex-company-framework setup --yes `
 The setup wizard asks:
 
 ```text
-External company/project memory root
+External memory drive
 Worker documents/reports root
 ```
 
@@ -58,14 +58,41 @@ npx codex-company-framework setup --advanced
 Recommended Windows defaults:
 
 ```text
-External company memory root:  V:\Codex\Companies
-Worker documents/reports root: V:\Codex\Companies
+External company memory root:  <selected-drive>:\Codex\Companies
+Worker documents/reports root: <selected-drive>:\Codex\Companies
 ```
 
 If the user does not have a `V:` drive, use:
 
 ```text
-C:\Users\<user>\CodexCompanies
+C:\Codex\Companies
+```
+
+On Windows, setup detects available drives and shows numbered choices:
+
+```text
+Detected drives:
+  1. C:\
+  2. V:\ (recommended)
+  custom. Type a full custom path
+```
+
+If the user chooses `V`, setup creates and uses:
+
+```text
+V:\Codex\Companies
+```
+
+For non-interactive setup, pass a drive:
+
+```powershell
+npx codex-company-framework setup --yes --drive V
+```
+
+or pass an exact root:
+
+```powershell
+npx codex-company-framework setup --yes --company-root "D:\Codex\Companies"
 ```
 
 The setup command creates:

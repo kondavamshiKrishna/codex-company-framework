@@ -1,4 +1,5 @@
 .tmp_install_test_codex_home/
+.tmp*/
 *.log
 *.tmp
 *.bak

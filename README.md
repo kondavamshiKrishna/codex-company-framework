@@ -34,7 +34,7 @@ npx github:kondavamshiKrishna/codex-company-framework setup
 
 The setup command asks for:
 
-- external company/project memory root;
+- external memory drive;
 - worker documents/reports root.
 
 By default, internal Codex paths are automatic:
@@ -46,6 +46,16 @@ By default, internal Codex paths are automatic:
 ```
 
 Use `--advanced` only if you intentionally want to change those internal paths.
+
+On Windows, setup detects available drives and asks which drive should hold
+external company memory. It then creates:
+
+```text
+<selected-drive>:\Codex\Companies
+```
+
+That folder stores company documents, Owner project memory, worker reports,
+prompts, and evidence.
 
 After setup, the terminal prints the exact first prompt to paste into Codex IDE.
 It also saves prompt files under:

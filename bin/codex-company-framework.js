@@ -24,6 +24,7 @@ Usage:
 Examples:
   npx codex-company-framework setup
   npx codex-company-framework setup --yes
+  npx codex-company-framework setup --yes --drive V
   npx codex-company-framework init-company
   npx codex-company-framework init-company --project . --name "My App" --yes
   ccf doctor
@@ -60,10 +61,47 @@ function getOption(name, defaultValue = "") {
 }
 
 function defaultCompanyRoot() {
-  if (isWindows() && fs.existsSync("V:\\")) {
-    return "V:\\Codex\\Companies";
+  if (isWindows()) {
+    const drive = recommendedExternalDrive();
+    return drive ? companyRootForDrive(drive) : "C:\\Codex\\Companies";
   }
   return path.join(os.homedir(), "CodexCompanies");
+}
+
+function detectWindowsDrives() {
+  if (!isWindows()) {
+    return [];
+  }
+  const drives = [];
+  for (let code = 65; code <= 90; code += 1) {
+    const letter = String.fromCharCode(code);
+    const root = `${letter}:\\`;
+    try {
+      if (fs.existsSync(root)) {
+        drives.push({ letter, root });
+      }
+    } catch (_) {
+      // Ignore drives that exist but cannot be accessed by the current user.
+    }
+  }
+  return drives;
+}
+
+function recommendedExternalDrive() {
+  const drives = detectWindowsDrives();
+  if (drives.some((d) => d.letter === "V")) return "V";
+  const nonSystem = drives.find((d) => d.letter !== "C");
+  if (nonSystem) return nonSystem.letter;
+  return drives[0] ? drives[0].letter : "";
+}
+
+function normalizeDriveLetter(value) {
+  const match = String(value || "").trim().match(/^([a-zA-Z])[:\\/]?$/);
+  return match ? match[1].toUpperCase() : "";
+}
+
+function companyRootForDrive(letter) {
+  return `${letter.toUpperCase()}:\\Codex\\Companies`;
 }
 
 function ensureDir(dir) {
@@ -117,7 +155,18 @@ function rlInterface() {
 function ask(rl, question, defaultValue) {
   const prompt = defaultValue ? `${question} [${defaultValue}]: ` : `${question}: `;
   return new Promise((resolve) => {
+    let settled = false;
+    const onClose = () => {
+      if (!settled) {
+        settled = true;
+        resolve(defaultValue || "");
+      }
+    };
+    rl.once("close", onClose);
     rl.question(prompt, (answer) => {
+      if (settled) return;
+      settled = true;
+      rl.removeListener("close", onClose);
       resolve(answer.trim() || defaultValue || "");
     });
   });
@@ -129,6 +178,55 @@ function explain(title, lines) {
   for (const line of lines) {
     console.log(`  ${line}`);
   }
+}
+
+async function askExternalCompanyRoot(rl) {
+  if (!isWindows()) {
+    explain("External company/project memory root", [
+      "This is where company-level documents, handoff memory, prompts, reports, and worker output are stored.",
+      "Choose a folder with enough space and easy backup.",
+    ]);
+    return ask(rl, "External company/project memory root", defaultCompanyRoot());
+  }
+
+  const drives = detectWindowsDrives();
+  const recommended = recommendedExternalDrive();
+
+  explain("External memory drive", [
+    "This drive will store company documents, Owner project memory, worker reports, prompts, and evidence.",
+    "The installer will create a Codex\\Companies folder on the selected drive.",
+    "Internal Codex skills and agent memory still stay under your normal Codex home unless you use --advanced.",
+  ]);
+
+  if (drives.length === 0) {
+    return ask(rl, "No drives were auto-detected. Enter external company/project memory root", defaultCompanyRoot());
+  }
+
+  console.log("");
+  console.log("Detected drives:");
+  drives.forEach((drive, index) => {
+    const note = drive.letter === recommended ? " (recommended)" : "";
+    console.log(`  ${index + 1}. ${drive.root}${note}`);
+  });
+  console.log("  Or type a full custom path, for example D:\\Codex\\Companies");
+
+  const defaultIndex = Math.max(1, drives.findIndex((d) => d.letter === recommended) + 1);
+  const answer = await ask(rl, "Which drive should be used for external company memory? Enter number, drive letter, or full custom path", String(defaultIndex));
+  const trimmed = String(answer || "").trim();
+  const numeric = Number(trimmed);
+  if (Number.isInteger(numeric) && numeric >= 1 && numeric <= drives.length) {
+    return companyRootForDrive(drives[numeric - 1].letter);
+  }
+  const letter = normalizeDriveLetter(trimmed);
+  if (letter) {
+    return companyRootForDrive(letter);
+  }
+  return trimmed || defaultCompanyRoot();
+}
+
+function companyRootFromDriveOption() {
+  const drive = normalizeDriveLetter(getOption("drive", ""));
+  return drive ? companyRootForDrive(drive) : "";
 }
 
 function yamlQuote(value) {
@@ -302,7 +400,7 @@ async function setup() {
     const codexHome = getOption("codex-home", defaultCodexHome());
     const ownerMemoryRoot = getOption("owner-memory-root", path.join(codexHome, "owner_memory"));
     const agentMemoryRoot = getOption("agent-memory-root", path.join(codexHome, "agent_memory"));
-    const companyRoot = getOption("company-root", defaultCompanyRoot());
+    const companyRoot = getOption("company-root", companyRootFromDriveOption() || defaultCompanyRoot());
     const workerDocumentsRoot = getOption("worker-documents-root", companyRoot);
 
     ensureDir(codexHome);
@@ -338,12 +436,7 @@ async function setup() {
     console.log(`  Agent memory:      ${agentMemoryRoot}`);
     console.log("  Use --advanced only if you intentionally want to change these.");
 
-    explain("External company/project memory root", [
-      "This is where company-level documents, handoff memory, prompts, and reports are stored.",
-      "Use a drive with enough space and easy backup. On this machine V:\\Codex\\Companies is recommended.",
-      "This is not where secrets or npm package files are stored.",
-    ]);
-    const companyRoot = await ask(rl, "External company/project memory root", defaultCompanyRoot());
+    const companyRoot = await askExternalCompanyRoot(rl);
 
     explain("Worker documents/reports root", [
       "This is where worker-generated reports, evidence, drafts, and final documents are stored.",
