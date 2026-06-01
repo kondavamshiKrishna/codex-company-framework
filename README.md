@@ -20,8 +20,16 @@ skills live under:
 
 ### From npm
 
+After the package is published to the npm registry:
+
 ```powershell
 npx codex-company-framework setup
+```
+
+Until then, install directly from GitHub through npm:
+
+```powershell
+npx github:kondavamshiKrishna/codex-company-framework setup
 ```
 
 The setup command asks for:
@@ -36,6 +44,12 @@ After setup, create a company from a project folder:
 
 ```powershell
 npx codex-company-framework init-company
+```
+
+GitHub fallback:
+
+```powershell
+npx github:kondavamshiKrishna/codex-company-framework init-company
 ```
 
 ### From Git Clone

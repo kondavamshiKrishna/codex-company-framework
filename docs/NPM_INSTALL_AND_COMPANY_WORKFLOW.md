@@ -5,10 +5,18 @@ paths, creates a company, and starts a new Codex chat.
 
 ## 1. Install From npm
 
+After publishing to the npm registry, run:
+
 Run:
 
 ```powershell
 npx codex-company-framework setup
+```
+
+Before npm registry publishing, run from GitHub through npm:
+
+```powershell
+npx github:kondavamshiKrishna/codex-company-framework setup
 ```
 
 For default non-interactive setup:
@@ -92,6 +100,12 @@ Run:
 
 ```powershell
 npx codex-company-framework init-company
+```
+
+GitHub fallback:
+
+```powershell
+npx github:kondavamshiKrishna/codex-company-framework init-company
 ```
 
 For non-interactive company creation:
@@ -203,4 +217,22 @@ npm install -g codex-company-framework
 ccf setup
 ccf init-company
 ccf doctor
+```
+
+## 8. Publishing To npm
+
+Publishing requires an npm account login on the machine:
+
+```powershell
+npm login
+npm whoami
+npm publish --access public
+```
+
+Before publishing:
+
+```powershell
+npm pack --dry-run
+node --check bin\codex-company-framework.js
+node bin\codex-company-framework.js setup --yes --codex-home .\.tmp-codex-home
 ```
