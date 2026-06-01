@@ -78,6 +78,16 @@ C:\Users\<user>\.codex\agent_memory
 C:\Users\<user>\.codex\codex-company-framework.yaml
 ```
 
+It also saves first-use prompt files:
+
+```text
+C:\Users\<user>\.codex\owner_memory\FIRST_OWNER_PROMPT.md
+C:\Users\<user>\.codex\owner_memory\COMPANY_CREATOR_DISCOVERY_PROMPT_TEMPLATE.md
+```
+
+The terminal prints the same prompt text so the user knows exactly what to do
+next in Codex IDE.
+
 By default, setup installs the two permanent global agents as Codex skills:
 
 ```text
@@ -160,6 +170,17 @@ C:\Users\<user>\.codex\skills\<company-id>-company
 C:\Users\<user>\.codex\agent_memory\<company-id>\<worker-name>\MEMORY.md
 ```
 
+It also creates:
+
+```text
+<company-root>\prompts\OWNER_ACTIVATION_PROMPT.md
+<company-root>\prompts\COMPANY_CREATOR_DISCOVERY_PROMPT.md
+```
+
+After company creation, the terminal prints the exact Owner activation prompt
+and tells the user to paste worker or Company Creator outputs back to the Owner
+for review.
+
 It also updates:
 
 ```text
@@ -173,10 +194,16 @@ After setup, use:
 ```text
 Use the codex-owner-operator skill.
 
-Act as Owner and my AI partner. Which company or project are we working on today?
-If this is a new project, ask me for the folder path, prepare the first Company
-Creator prompt, review the Company Creator output, and approve creation only
-after evidence and paths are clear.
+Act as Owner and my AI partner. I am opening this project in Codex IDE.
+
+First, check whether this project already has a company. If it does, tell me
+which company skill to use and continue from its current memory.
+
+If it does not have a company yet, ask me for the project folder if needed,
+then prepare the first discovery prompt that I should paste into a separate
+Company Creator chat.
+
+Do not create files yet. Start by orienting me and telling me the next step.
 ```
 
 For an existing company:

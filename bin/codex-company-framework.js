@@ -215,6 +215,78 @@ This file is updated by Codex Company Framework when a new company is created.
 `;
 }
 
+function ownerFirstPrompt() {
+  return `Use the codex-owner-operator skill.
+
+Act as Owner and my AI partner. I am opening this project in Codex IDE.
+
+First, check whether this project already has a company. If it does, tell me
+which company skill to use and continue from its current memory.
+
+If it does not have a company yet, ask me for the project folder if needed,
+then prepare the first discovery prompt that I should paste into a separate
+Company Creator chat.
+
+Do not create files yet. Start by orienting me and telling me the next step.`;
+}
+
+function companyCreatorDiscoveryPrompt(projectPath = "<project path>") {
+  return `Use the codex-company-creator skill.
+
+You are Company Creator for a new Codex company.
+Project path:
+${projectPath}
+
+Owner request:
+Design the company structure for this project.
+
+Phase:
+discovery only
+
+Inspect the project and return:
+- company name and company ID;
+- project type and runtime;
+- risks and protected routes;
+- proposed worker roles;
+- memory/report layout;
+- missing questions;
+- recommended next phase.
+
+Do not create files yet.`;
+}
+
+function printSetupNextSteps(codexHome, companyRoot) {
+  const promptFile = path.join(codexHome, "owner_memory", "FIRST_OWNER_PROMPT.md");
+  const creatorPromptFile = path.join(codexHome, "owner_memory", "COMPANY_CREATOR_DISCOVERY_PROMPT_TEMPLATE.md");
+  writeFile(promptFile, `# First Owner Prompt
+
+\`\`\`text
+${ownerFirstPrompt()}
+\`\`\`
+`);
+  writeFile(creatorPromptFile, `# Company Creator Discovery Prompt Template
+
+\`\`\`text
+${companyCreatorDiscoveryPrompt()}
+\`\`\`
+`);
+
+  console.log("\nWhat to do next");
+  console.log("1. Open Codex IDE.");
+  console.log("2. Open the project folder you want to work on.");
+  console.log("3. Start a new chat and paste this first Owner prompt:");
+  console.log("");
+  console.log(ownerFirstPrompt());
+  console.log("");
+  console.log("The Owner will act as your AI partner. If the project has no company yet,");
+  console.log("the Owner will give you a Company Creator prompt to paste into another chat.");
+  console.log("");
+  console.log("Saved prompt files:");
+  console.log(`  Owner prompt:           ${promptFile}`);
+  console.log(`  Company Creator prompt: ${creatorPromptFile}`);
+  console.log(`  Company root:           ${companyRoot}`);
+}
+
 function installSkills(codexHome) {
   const skillsRoot = path.join(codexHome, "skills");
   ensureDir(skillsRoot);
@@ -245,6 +317,7 @@ async function setup() {
 
     console.log("Setup complete.");
     console.log(`Config: ${frameworkConfigPath(codexHome)}`);
+    printSetupNextSteps(codexHome, companyRoot);
     return;
   }
 
@@ -294,8 +367,7 @@ async function setup() {
     console.log(`Config: ${frameworkConfigPath(codexHome)}`);
     console.log(`Owner memory: ${ownerMemoryRoot}`);
     console.log(`Company root: ${companyRoot}`);
-    console.log("\nOpen a new Codex chat and use:");
-    printCompanyPrompt();
+    printSetupNextSteps(codexHome, companyRoot);
   } finally {
     rl.close();
   }
@@ -567,6 +639,7 @@ Last updated: ${new Date().toISOString()}
   appendCurrentCompany(config.ownerMemoryRoot, { companyName, companyId, skillName, projectPath, companyRoot, workers });
 
   const promptFile = path.join(companyRoot, "prompts", "OWNER_ACTIVATION_PROMPT.md");
+  const creatorPromptFile = path.join(companyRoot, "prompts", "COMPANY_CREATOR_DISCOVERY_PROMPT.md");
   writeFile(promptFile, `# Owner Activation Prompt
 
 \`\`\`text
@@ -576,16 +649,31 @@ Use the ${skillName} skill.
 Act as Owner for ${companyName}. Read current company memory and continue from the current next task.
 \`\`\`
 `);
+  writeFile(creatorPromptFile, `# Company Creator Discovery Prompt
+
+\`\`\`text
+${companyCreatorDiscoveryPrompt(projectPath)}
+\`\`\`
+`);
 
   console.log("\nCompany created.");
   console.log(`Company root: ${companyRoot}`);
   console.log(`Company skill: ${skillName}`);
   console.log(`Owner prompt: ${promptFile}`);
-  console.log("\nOpen a new Codex chat and use:");
+  console.log(`Company Creator discovery prompt: ${creatorPromptFile}`);
+  console.log("\nWhat to do next");
+  console.log("1. Open Codex IDE.");
+  console.log(`2. Open this project folder: ${projectPath}`);
+  console.log("3. Start a new Owner chat and paste this:");
+  console.log("");
   console.log(`Use the codex-owner-operator skill.
 Use the ${skillName} skill.
 
 Act as Owner for ${companyName}. Read current company memory and continue from the current next task.`);
+  console.log("");
+  console.log("4. If the Owner asks for worker/company output, open the requested worker or");
+  console.log("   Company Creator chat, paste the Owner's prompt there, then copy the result");
+  console.log("   back to the Owner for review.");
   return { companyRoot, skillName };
 }
 
@@ -609,11 +697,7 @@ function doctor() {
 }
 
 function printOwnerPrompt() {
-  console.log(`Use the codex-owner-operator skill.
-
-Act as Owner and my AI partner. Check whether this project already has a
-company. If not, ask me for the project folder and prepare the first prompt for
-the Company Creator. Verify evidence before claims and tell me the next task.`);
+  console.log(ownerFirstPrompt());
 }
 
 function printCompanyPrompt() {
@@ -629,28 +713,7 @@ prompts, and smoke tests.`);
 
 function printCreatorDiscoveryPrompt() {
   const project = getOption("project", "<project path>");
-  console.log(`Use the codex-company-creator skill.
-
-You are Company Creator for a new Codex company.
-Project path:
-${project}
-
-Owner request:
-Design the company structure for this project.
-
-Phase:
-discovery only
-
-Inspect the project and return:
-- company name and company ID;
-- project type and runtime;
-- risks and protected routes;
-- proposed worker roles;
-- memory/report layout;
-- missing questions;
-- recommended next phase.
-
-Do not create files yet.`);
+  console.log(companyCreatorDiscoveryPrompt(project));
 }
 
 (async () => {

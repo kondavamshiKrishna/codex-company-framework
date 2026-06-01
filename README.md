@@ -47,6 +47,14 @@ By default, internal Codex paths are automatic:
 
 Use `--advanced` only if you intentionally want to change those internal paths.
 
+After setup, the terminal prints the exact first prompt to paste into Codex IDE.
+It also saves prompt files under:
+
+```text
+%USERPROFILE%\.codex\owner_memory\FIRST_OWNER_PROMPT.md
+%USERPROFILE%\.codex\owner_memory\COMPANY_CREATOR_DISCOVERY_PROMPT_TEMPLATE.md
+```
+
 After setup, create a company from a project folder:
 
 ```powershell
@@ -87,6 +95,23 @@ If this is a new project, the Owner prepares the first prompt for a separate
 Company Creator chat. The Company Creator proposes the company. The user copies
 that output back to the Owner. The Owner reviews, corrects, and only then
 approves company creation.
+
+Recommended first prompt after setup:
+
+```text
+Use the codex-owner-operator skill.
+
+Act as Owner and my AI partner. I am opening this project in Codex IDE.
+
+First, check whether this project already has a company. If it does, tell me
+which company skill to use and continue from its current memory.
+
+If it does not have a company yet, ask me for the project folder if needed,
+then prepare the first discovery prompt that I should paste into a separate
+Company Creator chat.
+
+Do not create files yet. Start by orienting me and telling me the next step.
+```
 
 Continue an existing company:
 

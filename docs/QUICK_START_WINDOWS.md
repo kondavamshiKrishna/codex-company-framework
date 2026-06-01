@@ -24,6 +24,9 @@ Normal setup asks only for the external company memory/report locations.
 Internal Codex paths are automatic. Use `--advanced` only if you need to change
 Codex home, owner memory, or agent memory paths.
 
+After setup, copy the first Owner prompt printed in the terminal, open Codex IDE
+in your project folder, and paste that prompt into a new chat.
+
 ## Validate
 
 ```powershell
@@ -34,11 +37,15 @@ powershell -ExecutionPolicy Bypass -File .\installer\validate.ps1
 
 ```text
 Use the codex-owner-operator skill.
-Use the codex-company-creator skill.
 
-Create a new Codex company for:
-<project path>
+Act as Owner and my AI partner. I am opening this project in Codex IDE.
 
-Inspect first. Then propose workers, memory layout, report layout, activation
-prompts, and smoke tests.
+First, check whether this project already has a company. If it does, tell me
+which company skill to use and continue from its current memory.
+
+If it does not have a company yet, ask me for the project folder if needed,
+then prepare the first discovery prompt that I should paste into a separate
+Company Creator chat.
+
+Do not create files yet. Start by orienting me and telling me the next step.
 ```
