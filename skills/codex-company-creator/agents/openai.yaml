@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Company Creator"
+  short_description: "Creates project companies and workers."
+  default_prompt: "Use the codex-owner-operator skill and codex-company-creator skill. Inspect this project and propose a company structure with workers, memory, reports, prompts, and validation."

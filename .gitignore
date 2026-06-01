@@ -1,0 +1,10 @@
+.tmp_install_test_codex_home/
+*.log
+*.tmp
+*.bak
+__pycache__/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+

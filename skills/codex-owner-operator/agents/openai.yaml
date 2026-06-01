@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Owner Operator"
+  short_description: "Owns projects and verifies worker outputs."
+  default_prompt: "Use the codex-owner-operator skill. Act as Owner for this project, verify evidence, supervise workers, and continue from the current next task."
