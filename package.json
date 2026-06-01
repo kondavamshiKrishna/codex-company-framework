@@ -14,8 +14,8 @@
   },
   "type": "commonjs",
   "bin": {
-    "codex-company-framework": "./bin/codex-company-framework.js",
-    "ccf": "./bin/codex-company-framework.js"
+    "codex-company-framework": "bin/codex-company-framework.js",
+    "ccf": "bin/codex-company-framework.js"
   },
   "files": [
     "bin",
