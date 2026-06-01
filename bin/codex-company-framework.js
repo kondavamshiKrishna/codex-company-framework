@@ -123,6 +123,14 @@ function ask(rl, question, defaultValue) {
   });
 }
 
+function explain(title, lines) {
+  console.log("");
+  console.log(title);
+  for (const line of lines) {
+    console.log(`  ${line}`);
+  }
+}
+
 function yamlQuote(value) {
   return JSON.stringify(String(value));
 }
@@ -217,6 +225,7 @@ function installSkills(codexHome) {
 
 async function setup() {
   const yes = hasFlag("yes");
+  const advanced = hasFlag("advanced");
   if (yes) {
     const codexHome = getOption("codex-home", defaultCodexHome());
     const ownerMemoryRoot = getOption("owner-memory-root", path.join(codexHome, "owner_memory"));
@@ -241,10 +250,33 @@ async function setup() {
 
   const rl = rlInterface();
   try {
-    const codexHome = await ask(rl, "Codex home", defaultCodexHome());
-    const ownerMemoryRoot = await ask(rl, "Owner memory root", path.join(codexHome, "owner_memory"));
-    const agentMemoryRoot = await ask(rl, "Agent memory root", path.join(codexHome, "agent_memory"));
+    const defaultHome = defaultCodexHome();
+    const codexHome = advanced ? await ask(rl, "Codex home", defaultHome) : defaultHome;
+    const ownerMemoryRoot = advanced
+      ? await ask(rl, "Owner memory root", path.join(codexHome, "owner_memory"))
+      : path.join(codexHome, "owner_memory");
+    const agentMemoryRoot = advanced
+      ? await ask(rl, "Agent memory root", path.join(codexHome, "agent_memory"))
+      : path.join(codexHome, "agent_memory");
+
+    console.log("\nInternal Codex paths will use defaults:");
+    console.log(`  Codex home:        ${codexHome}`);
+    console.log(`  Owner memory:      ${ownerMemoryRoot}`);
+    console.log(`  Agent memory:      ${agentMemoryRoot}`);
+    console.log("  Use --advanced only if you intentionally want to change these.");
+
+    explain("External company/project memory root", [
+      "This is where company-level documents, handoff memory, prompts, and reports are stored.",
+      "Use a drive with enough space and easy backup. On this machine V:\\Codex\\Companies is recommended.",
+      "This is not where secrets or npm package files are stored.",
+    ]);
     const companyRoot = await ask(rl, "External company/project memory root", defaultCompanyRoot());
+
+    explain("Worker documents/reports root", [
+      "This is where worker-generated reports, evidence, drafts, and final documents are stored.",
+      "For most users this should be the same as the company memory root.",
+      "Choose a different path only if you want reports on another drive.",
+    ]);
     const workerDocumentsRoot = await ask(rl, "Worker documents/reports root", companyRoot);
 
     ensureDir(codexHome);
@@ -452,7 +484,7 @@ async function initCompany() {
 
   const rl = rlInterface();
   try {
-    const codexHome = await ask(rl, "Codex home", defaultCodexHome());
+    const codexHome = hasFlag("advanced") ? await ask(rl, "Codex home", defaultCodexHome()) : defaultCodexHome();
     const config = readFrameworkConfig(codexHome) || {
       codexHome,
       ownerMemoryRoot: path.join(codexHome, "owner_memory"),
@@ -461,12 +493,39 @@ async function initCompany() {
       workerDocumentsRoot: defaultCompanyRoot(),
     };
 
+    console.log("\nUsing framework config:");
+    console.log(`  Codex home:     ${codexHome}`);
+    console.log(`  Company root:   ${config.companyRoot}`);
+    console.log(`  Agent memory:   ${config.agentMemoryRoot}`);
+    console.log("  Use --advanced only if you intentionally want a different Codex home.");
+
+    explain("Project folder to turn into a company", [
+      "This is the real app/repo folder the Company Creator will inspect.",
+      "Example: D:\\Projects\\MyApp or V:\\videonut___\\video net version 2",
+    ]);
     const projectPath = await ask(rl, "Project folder to turn into a company", process.cwd());
     const defaultName = titleCase(path.basename(path.resolve(projectPath))) || "New Project";
+    explain("Company name", [
+      "This is the human-readable name the Owner will use for this project.",
+      "Example: VideoNut V2, Konda Advisor PR208, CRM Dashboard.",
+    ]);
     const companyName = await ask(rl, "Company name", defaultName);
+    explain("Company ID", [
+      "This is the safe folder/skill prefix for the company.",
+      "Use lowercase words with hyphens. The default is usually correct.",
+    ]);
     const companyId = await ask(rl, "Company ID", slugify(companyName));
+    explain("Company memory/report root", [
+      "This is where this company's memory, reports, prompts, and worker output folders are created.",
+      "It should normally be inside the external company root chosen during setup.",
+    ]);
     const companyRoot = await ask(rl, "Company memory/report root", path.join(config.companyRoot, companyId));
     const defaultWorkers = "product-manager,backend-engineer,frontend-engineer,qa-test-engineer,documentation-writer,independent-validation-agent";
+    explain("Worker roles", [
+      "These are the specialist roles this company starts with.",
+      "You can add domain-specific roles, for example media-pipeline-engineer for VideoNut.",
+      "Separate roles with commas.",
+    ]);
     const workerAnswer = await ask(rl, "Worker roles, comma separated", defaultWorkers);
     const workers = workerAnswer.split(",").map((w) => slugify(w)).filter(Boolean);
 

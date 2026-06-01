@@ -9,7 +9,7 @@ codex-company-framework
 Current package version:
 
 ```text
-0.1.0
+0.1.1
 ```
 
 ## Pre-Publish Checks
@@ -53,4 +53,3 @@ Users can still run through npm from GitHub:
 npx github:kondavamshiKrishna/codex-company-framework setup
 npx github:kondavamshiKrishna/codex-company-framework init-company
 ```
-

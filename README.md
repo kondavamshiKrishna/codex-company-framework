@@ -34,11 +34,18 @@ npx github:kondavamshiKrishna/codex-company-framework setup
 
 The setup command asks for:
 
-- Codex home;
-- Owner memory root;
-- Agent memory root;
 - external company/project memory root;
 - worker documents/reports root.
+
+By default, internal Codex paths are automatic:
+
+```text
+%USERPROFILE%\.codex
+%USERPROFILE%\.codex\owner_memory
+%USERPROFILE%\.codex\agent_memory
+```
+
+Use `--advanced` only if you intentionally want to change those internal paths.
 
 After setup, create a company from a project folder:
 

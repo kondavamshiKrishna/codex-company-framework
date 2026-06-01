@@ -14,6 +14,16 @@ Or double-click:
 installer\install.bat
 ```
 
+From npm:
+
+```powershell
+npx codex-company-framework setup
+```
+
+Normal setup asks only for the external company memory/report locations.
+Internal Codex paths are automatic. Use `--advanced` only if you need to change
+Codex home, owner memory, or agent memory paths.
+
 ## Validate
 
 ```powershell
@@ -32,4 +42,3 @@ Create a new Codex company for:
 Inspect first. Then propose workers, memory layout, report layout, activation
 prompts, and smoke tests.
 ```
-

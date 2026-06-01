@@ -37,19 +37,27 @@ npx codex-company-framework setup --yes `
 The setup wizard asks:
 
 ```text
-Codex home
-Owner memory root
-Agent memory root
 External company/project memory root
 Worker documents/reports root
+```
+
+It does not ask normal users for internal Codex paths. These are automatic:
+
+```text
+Codex home:        C:\Users\<user>\.codex
+Owner memory root: C:\Users\<user>\.codex\owner_memory
+Agent memory root: C:\Users\<user>\.codex\agent_memory
+```
+
+Use advanced mode only if those internal paths must be changed:
+
+```powershell
+npx codex-company-framework setup --advanced
 ```
 
 Recommended Windows defaults:
 
 ```text
-Codex home:                    C:\Users\<user>\.codex
-Owner memory root:             C:\Users\<user>\.codex\owner_memory
-Agent memory root:             C:\Users\<user>\.codex\agent_memory
 External company memory root:  V:\Codex\Companies
 Worker documents/reports root: V:\Codex\Companies
 ```
@@ -130,13 +138,15 @@ npx codex-company-framework init-company --yes `
 The wizard asks:
 
 ```text
-Codex home
 Project folder to turn into a company
 Company name
 Company ID
 Company memory/report root
 Worker roles
 ```
+
+It uses the configured Codex home automatically. Use `--advanced` only if you
+need to point company creation at a different Codex home.
 
 It creates:
 
