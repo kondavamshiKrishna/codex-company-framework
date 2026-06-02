@@ -365,10 +365,11 @@ Standard new-chat activation:
 Use the codex-owner-operator skill.
 Use the <company-skill-name> skill.
 
-Act as Owner for <company name>. Read current company memory and continue from
-the current next task only after the company integrity gate passes. If registry,
-skill, memory, report, project, or agent-memory paths disagree, stop and report
-the repair step before doing project work.
+Act as Owner for <company name>. Run the company integrity gate first. If
+registry, skill, memory, report, project, worker roster, worker folders, role
+files, or agent-memory paths disagree, stop and report the Company Creator
+repair prompt before doing project work. If integrity passes, read current
+company memory and continue from the current next task.
 \`\`\`
 `;
 }
@@ -615,7 +616,7 @@ Treat worker output as draft evidence. Verify critical claims before accepting.
   const openaiYaml = `interface:
   display_name: ${yamlDoubleQuote(`${companyName} Company`)}
   short_description: ${yamlDoubleQuote(`Coordinates ${companyName} workers.`)}
-  default_prompt: ${yamlDoubleQuote(`Use the codex-owner-operator skill. Use the ${skillName} skill. Act as Owner for ${companyName}. Run the company integrity gate first. If integrity passes, read current company memory and continue from the current next task.`)}
+  default_prompt: ${yamlDoubleQuote(`Use the codex-owner-operator skill. Use the ${skillName} skill. Act as Owner for ${companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, worker roster, worker folders, role files, or agent-memory paths disagree, stop and report the Company Creator repair prompt before doing project work. If integrity passes, read current company memory and continue from the current next task.`)}
 `;
   writeFile(path.join(skillRoot, "SKILL.md"), skillBody);
   writeFile(path.join(skillRoot, "agents", "openai.yaml"), openaiYaml);
@@ -728,7 +729,7 @@ Activation:
 Use the codex-owner-operator skill.
 Use the ${details.skillName} skill.
 
-Act as Owner for ${details.companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, or agent-memory paths disagree, stop and report the repair step before doing project work. If integrity passes, read current company memory and continue from the current next task.
+Act as Owner for ${details.companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, worker roster, worker folders, role files, or agent-memory paths disagree, stop and report the Company Creator repair prompt before doing project work. If integrity passes, read current company memory and continue from the current next task.
 \`\`\`
 ${endMarker}
 `;
@@ -879,7 +880,7 @@ Last updated: ${new Date().toISOString()}
 Use the codex-owner-operator skill.
 Use the ${skillName} skill.
 
-Act as Owner for ${companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, or agent-memory paths disagree, stop and report the repair step before doing project work. If integrity passes, read current company memory and continue from the current next task.
+Act as Owner for ${companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, worker roster, worker folders, role files, or agent-memory paths disagree, stop and report the Company Creator repair prompt before doing project work. If integrity passes, read current company memory and continue from the current next task.
 \`\`\`
 `);
   writeFile(creatorPromptFile, `# Company Creator Discovery Prompt
@@ -902,7 +903,7 @@ ${companyCreatorDiscoveryPrompt(projectPath)}
   console.log(`Use the codex-owner-operator skill.
 Use the ${skillName} skill.
 
-Act as Owner for ${companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, or agent-memory paths disagree, stop and report the repair step before doing project work. If integrity passes, read current company memory and continue from the current next task.`);
+Act as Owner for ${companyName}. Run the company integrity gate first. If registry, skill, memory, report, project, worker roster, worker folders, role files, or agent-memory paths disagree, stop and report the Company Creator repair prompt before doing project work. If integrity passes, read current company memory and continue from the current next task.`);
   console.log("");
   console.log("4. If the Owner asks for worker/company output, open the requested worker or");
   console.log("   Company Creator chat, paste the Owner's prompt there, then copy the result");
@@ -1034,7 +1035,7 @@ function collectCompanyHealth(config) {
       }
       const roleFile = path.join(workerFolder, "ROLE.md");
       if (!fs.existsSync(roleFile)) {
-        findings.push({ level: "WARN", company, message: `Worker ${worker} has no ROLE.md file: ${roleFile}` });
+        findings.push({ level: "FAIL", company, message: `Worker ${worker} has no ROLE.md file: ${roleFile}` });
       }
       const memoryFile = path.join(config.agentMemoryRoot, company.companyId, worker, "MEMORY.md");
       const status = workerMemoryStatus(memoryFile);

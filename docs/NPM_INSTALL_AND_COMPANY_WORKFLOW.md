@@ -241,10 +241,12 @@ Act as Owner and my AI partner. I am opening this project in Codex IDE.
 
 First, run the company integrity gate. If this project already has a company,
 tell me which company skill to use only after registry, skill, memory, report,
-project, and agent-memory paths are internally consistent.
+project, worker roster, worker folders, role files, and agent-memory paths are
+internally consistent.
 
-If any company path, registry, skill, or memory check fails, do not continue
-project work. Report the mismatch and give the repair step first.
+If any company path, registry, skill, worker, or memory check fails, do not
+continue project work. Report the mismatch and give the Company Creator repair
+prompt first.
 
 If it does not have a company yet, ask me for the project folder if needed,
 then prepare the first discovery prompt that I should paste into a separate
@@ -260,9 +262,10 @@ Use the codex-owner-operator skill.
 Use the <company-id>-company skill.
 
 Act as Owner for <company name>. Run the company integrity gate first. If
-registry, skill, memory, report, project, or agent-memory paths disagree, stop
-and report the repair step before doing project work. If integrity passes, read
-current company memory and continue from the current next task.
+registry, skill, memory, report, project, worker roster, worker folders, role
+files, or agent-memory paths disagree, stop and report the Company Creator
+repair prompt before doing project work. If integrity passes, read current
+company memory and continue from the current next task.
 ```
 
 ## 5. Owner And User Relationship
@@ -390,9 +393,10 @@ company registry entry, generated company root, and that company's per-agent
 memory. It does not delete the source project folder. Without `--yes`, it is a
 dry run.
 
-`uninstall` removes the global Owner and Company Creator skills plus framework
-config. Add `--all --yes` only when you also want to delete Owner memory and all
-agent memory.
+`uninstall` is a dry run unless `--yes` is provided. With `--yes`, it removes
+the global Owner and Company Creator skills plus framework config. Add
+`--all --yes` only when you also want to delete Owner memory and all agent
+memory.
 
 If installed globally:
 

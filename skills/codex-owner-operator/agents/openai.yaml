@@ -1,4 +1,4 @@
 interface:
   display_name: "Codex Owner Operator"
   short_description: "Owns projects and verifies worker outputs."
-  default_prompt: "Use the codex-owner-operator skill. Act as Owner for this project. Run the company integrity gate before project work, verify evidence, supervise workers only after integrity passes, and continue from the current next task."
+  default_prompt: "Use the codex-owner-operator skill. Act as Owner for this project. Run the company integrity gate before project work. If registry, skill, memory, report, project, worker roster, worker folders, role files, or agent-memory paths disagree, stop and report the Company Creator repair prompt before supervising workers."

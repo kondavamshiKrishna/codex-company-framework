@@ -97,7 +97,11 @@ Owner verifies:
 - installed skills;
 - company registry;
 - memory paths;
+- company skill;
+- worker roster;
 - worker paths;
+- role files;
+- per-agent memory files;
 - report folders;
 - smoke test result.
 
@@ -108,6 +112,7 @@ Use phases to prevent accidental overreach:
 - discovery: inspect and propose only;
 - documentation: write memory/docs/prompts only;
 - implementation: create company skill, workers, and memories;
+- repair: fix registry, skill, memory, worker roster, role files, and per-agent memory without project work;
 - validation: run smoke checks;
 - operations: assign real work to workers.
 
@@ -118,4 +123,3 @@ Partner, which company or project are we working on today?
 If this is new, give me the project folder and I will prepare the Company
 Creator prompt.
 ```
-

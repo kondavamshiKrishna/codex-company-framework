@@ -243,9 +243,10 @@ Use the codex-owner-operator skill.
 Use the <company-skill-name> skill.
 
 Act as Owner for <company name>. Run the company integrity gate first. If
-registry, skill, memory, report, project, or agent-memory paths disagree, stop
-and report the repair step before doing project work. If integrity passes, read
-current company memory and continue from the current next task.
+registry, skill, memory, report, project, worker roster, worker folders, role
+files, or agent-memory paths disagree, stop and report the Company Creator
+repair prompt before doing project work. If integrity passes, read current
+company memory and continue from the current next task.
 ```
 
 Create a new company:
@@ -293,8 +294,11 @@ prompt:
 Use the codex-owner-operator skill.
 Use the <company-skill-name> skill.
 
-Act as Owner for <company name>. Read current company memory and continue from
-the current next task only after the company integrity gate passes.
+Act as Owner for <company name>. Run the company integrity gate first. If
+registry, skill, memory, report, project, worker roster, worker folders, role
+files, or agent-memory paths disagree, stop and report the Company Creator
+repair prompt before doing project work. If integrity passes, read current
+company memory and continue from the current next task.
 ```
 
 Then ask the user to paste worker/company outputs back into the Owner chat for

@@ -34,6 +34,7 @@ The Owner does not belong to one project. The Owner is responsible for:
 - protecting project boundaries;
 - deciding when to spawn workers;
 - verifying reports before accepting them;
+- running the company integrity gate before project work;
 - updating durable memory after meaningful decisions.
 
 The Owner should be implemented as a global Codex skill:
@@ -289,15 +290,18 @@ skills\codex-company-creator
 Default Owner loop:
 
 1. Identify project/company context.
-2. Read current company memory.
-3. Inspect real files/runtime before claims.
-4. Decide whether workers are needed.
-5. Spawn or instruct workers with exact scope.
-6. Review worker output as draft, not truth.
-7. Verify key claims with evidence.
-8. Accept, reject, or refine.
-9. Decide next task.
-10. Update memory.
+2. Run the company integrity gate.
+3. Verify registry, skill, memory, report folders, worker roster, worker folders, role files, and per-agent memory.
+4. If any blocking check fails, stop and prepare a Company Creator repair prompt.
+5. Read current company memory only after integrity passes.
+6. Inspect real files/runtime before claims.
+7. Decide whether workers are needed.
+8. Spawn or instruct workers with exact scope.
+9. Review worker output as draft, not truth.
+10. Verify key claims with evidence.
+11. Accept, reject, or refine.
+12. Decide next task.
+13. Update memory.
 
 The Owner must always separate:
 
@@ -331,7 +335,10 @@ Use the codex-owner-operator skill.
 Use the <company-skill-name> skill.
 
 Act as Owner for <company name>.
-Read current company memory and continue from the current next task.
+Run the company integrity gate first. If registry, skill, memory, report,
+project, worker roster, worker folders, role files, or agent-memory paths
+disagree, stop and give the Company Creator repair prompt before doing project
+work.
 ```
 
 ### Create New Company

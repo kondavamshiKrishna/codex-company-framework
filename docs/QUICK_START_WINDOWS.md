@@ -69,10 +69,13 @@ Use the codex-owner-operator skill.
 Act as Owner and my AI partner. I am opening this project in Codex IDE.
 
 First, check whether this project already has a company. If it does, tell me
-which company skill to use only after the company integrity gate passes.
+which company skill to use only after registry, skill, memory, report, project,
+worker roster, worker folders, role files, and agent-memory paths are internally
+consistent.
 
-If any company path, registry, skill, or memory check fails, do not continue
-project work. Report the mismatch and give the repair step first.
+If any company path, registry, skill, worker, or memory check fails, do not
+continue project work. Report the mismatch and give the Company Creator repair
+prompt first.
 
 If it does not have a company yet, ask me for the project folder if needed,
 then prepare the first discovery prompt that I should paste into a separate
