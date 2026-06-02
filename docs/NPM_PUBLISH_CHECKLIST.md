@@ -9,7 +9,7 @@ codex-company-framework
 Current package version:
 
 ```text
-0.1.8
+0.1.9
 ```
 
 ## Pre-Publish Checks
@@ -45,9 +45,10 @@ Publish:
 npm publish --access public
 ```
 
-## Use Before npm Registry Publish
+## GitHub Development Fallback
 
-Users can still run through npm from GitHub:
+Users can run the current GitHub source through npm before the next registry
+version is published:
 
 ```powershell
 npx github:kondavamshiKrishna/codex-company-framework setup

@@ -20,13 +20,14 @@ skills live under:
 
 ### From npm
 
-After the package is published to the npm registry:
+Install from the npm registry:
 
 ```powershell
 npx codex-company-framework setup
 ```
 
-Until then, install directly from GitHub through npm:
+Development fallback, if you need to run the current GitHub source before a new
+npm version is published:
 
 ```powershell
 npx github:kondavamshiKrishna/codex-company-framework setup

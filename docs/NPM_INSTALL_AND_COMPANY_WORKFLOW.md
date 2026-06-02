@@ -5,15 +5,14 @@ paths, creates a company, and starts a new Codex chat.
 
 ## 1. Install From npm
 
-After publishing to the npm registry, run:
-
-Run:
+Install from the npm registry:
 
 ```powershell
 npx codex-company-framework setup
 ```
 
-Before npm registry publishing, run from GitHub through npm:
+Development fallback, if you need to run the current GitHub source before a new
+npm version is published:
 
 ```powershell
 npx github:kondavamshiKrishna/codex-company-framework setup
