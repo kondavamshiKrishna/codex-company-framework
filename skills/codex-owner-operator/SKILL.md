@@ -42,7 +42,9 @@ Use it to discover:
 - selected external company memory root;
 - worker documents/report root;
 - Owner memory root;
-- agent memory root.
+- agent memory root;
+- Codex runtime expectations such as `max_threads`, `max_depth`, and
+  `job_max_runtime_seconds` when configured.
 
 Never assume a specific drive letter.
 
@@ -54,6 +56,8 @@ Never assume a specific drive letter.
 ```
 
 4. Run the company integrity gate before continuing:
+   - if framework runtime tuning is enabled, verify the active Codex
+     `config.toml` contains the configured worker capacity and job runtime;
    - registry company memory exists;
    - registry company memory outside configured `company_root` is identified as a warning, not a blocker, if the older/custom path exists and all company paths agree;
    - named company skill exists;
@@ -178,15 +182,28 @@ When workers or subagents are useful:
 
 1. Define the worker roles and exact scope.
 2. Give each worker a bounded task, allowed paths, forbidden actions, and output path.
-3. Require every worker to return:
+3. Read the worker's `ROLE.md` and memory before writing the prompt.
+4. Require every worker to return:
+   - role;
+   - task;
    - evidence checked;
    - findings;
+   - risks and edge cases;
    - assumptions;
    - unsupported claims;
+   - recommendation;
    - recommended next task;
-   - memory-update notes.
-4. Wait for results before synthesizing.
-5. Verify critical claims independently before accepting.
+   - memory-update notes;
+   - escalations for Owner.
+5. Tell workers they may say no, warn, request clarification, or escalate when
+   the task is unsafe, outside scope, unsupported by evidence, or better handled
+   by another role.
+6. Wait for results before synthesizing.
+7. Verify critical claims independently before accepting.
+
+Do not let a worker self-approve the work. The Owner remains accountable for
+choosing workers, reviewing outputs, deciding the next task, and protecting the
+project.
 
 ## Owner Review Format
 

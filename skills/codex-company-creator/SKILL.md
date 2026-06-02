@@ -20,7 +20,9 @@ Before choosing paths, read the framework config when available:
 ```
 
 Use `company_root`, `worker_documents_root`, `owner_memory_root`, and
-`agent_memory_root` from that config. Never assume a specific drive letter.
+`agent_memory_root` from that config. Also read configured runtime expectations
+such as `max_threads`, `max_depth`, and `job_max_runtime_seconds` when present.
+Never assume a specific drive letter.
 
 ## Company Creation Workflow
 
@@ -29,9 +31,11 @@ Use `company_root`, `worker_documents_root`, `owner_memory_root`, and
 3. Identify project type, runtime, data stores, risk areas, and user goals.
 4. Propose the company name and company skill name.
 5. Propose worker roles only where they create useful separation.
-6. Define memory and report layout.
+6. Define worker behavior, permission boundaries, refusal rules, escalation
+   rules, memory rules, and report layout.
 7. Define runtime, DB, API, and environment routing rules.
-8. Define worker permission levels.
+8. Define worker permission levels and which roles may edit code, run tests,
+   use web search, inspect databases, or touch runtime state.
 9. Stop and ask if any required path, permission, runtime route, or business goal is missing.
 10. Create company skill and worker persona templates only after Owner approval.
 11. Create smoke-test prompts.
@@ -143,6 +147,13 @@ Each worker needs:
 - escalation rules;
 - output format.
 
+Every worker role must explicitly state that the worker can say no, warn the
+Owner, ask for clarification, and escalate when the task is unsafe,
+under-specified, outside its role, or unsupported by evidence. Workers should
+think professionally across edge cases, risks, missing tests, hidden
+dependencies, and alternate explanations. They should not act as final
+decision-makers; their output is draft evidence for Owner review.
+
 Company repair must create or verify every worker has:
 
 - `<company-root>\agents\<worker>\ROLE.md`;
@@ -162,6 +173,11 @@ Assign permissions by role:
 - researcher: use web/search when needed, cite sources, write research notes;
 - documentation writer: write docs/reports, avoid code changes unless asked;
 - devops/runtime engineer: inspect containers/logs/config, avoid destructive state changes unless approved.
+
+For long-running or nested company work, record the expected runtime capacity
+from framework config. If the requested worker plan requires more parallelism,
+deeper nesting, or longer runs than configured, report that as a setup gap to
+the Owner before creating the company.
 
 ## Company Skill Requirements
 

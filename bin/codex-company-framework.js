@@ -28,6 +28,8 @@ Examples:
   npx codex-company-framework setup
   npx codex-company-framework setup --yes
   npx codex-company-framework setup --yes --drive E
+  npx codex-company-framework setup --yes --runtime-seconds 3600 --max-threads 20 --max-depth 20
+  npx codex-company-framework setup --yes --no-runtime-config
   npx codex-company-framework init-company
   npx codex-company-framework init-company --project . --name "My App" --yes
   npx codex-company-framework init-company --project . --name "My App" --yes --force
@@ -264,6 +266,18 @@ async function askExternalCompanyRoot(rl) {
   return trimmed || defaultCompanyRoot();
 }
 
+async function askRuntimeConfig(rl) {
+  const runtime = runtimeDefaults();
+  explain("Codex runtime settings", [
+    "The framework can tune Codex for company workflows by updating your Codex config.toml.",
+    "It sets high reasoning, parallel worker capacity, nested-worker depth, and a one-hour job runtime.",
+    "It does not force a model or dangerous sandbox mode unless you pass --model or --sandbox-mode.",
+  ]);
+  const answer = await ask(rl, "Configure Codex runtime for company workflows? Enter Y or N", "Y");
+  runtime.configureRuntime = !String(answer || "").trim().toLowerCase().startsWith("n");
+  return runtime;
+}
+
 function companyRootFromDriveOption() {
   const drive = normalizeDriveLetter(getOption("drive", ""));
   if (drive === "C" && recommendedExternalDrive()) {
@@ -291,6 +305,96 @@ function frameworkConfigPath(codexHome) {
   return path.join(codexHome, "codex-company-framework.yaml");
 }
 
+function codexRuntimeConfigPath(codexHome) {
+  return path.join(codexHome, "config.toml");
+}
+
+function runtimeDefaults() {
+  return {
+    configureRuntime: !hasFlag("no-runtime-config"),
+    model: getOption("model", ""),
+    modelReasoningEffort: getOption("model-reasoning-effort", "high"),
+    sandboxMode: getOption("sandbox-mode", ""),
+    maxThreads: Number(getOption("max-threads", "20")),
+    maxDepth: Number(getOption("max-depth", "20")),
+    jobMaxRuntimeSeconds: Number(getOption("runtime-seconds", getOption("job-max-runtime-seconds", "3600"))),
+  };
+}
+
+function tomlValue(value) {
+  if (typeof value === "number") return String(value);
+  if (typeof value === "boolean") return value ? "true" : "false";
+  return JSON.stringify(String(value));
+}
+
+function upsertTomlRootKey(content, key, value) {
+  const lines = content ? content.split(/\r?\n/u) : [];
+  const keyPattern = new RegExp(`^\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*=`);
+  let inRoot = true;
+  let updated = false;
+  const next = lines.map((line) => {
+    if (/^\s*\[[^\]]+\]\s*$/u.test(line)) {
+      inRoot = false;
+    }
+    if (inRoot && keyPattern.test(line)) {
+      updated = true;
+      return `${key} = ${tomlValue(value)}`;
+    }
+    return line;
+  });
+  if (!updated) {
+    let insertAt = next.findIndex((line) => /^\s*\[[^\]]+\]\s*$/u.test(line));
+    if (insertAt < 0) insertAt = next.length;
+    next.splice(insertAt, 0, `${key} = ${tomlValue(value)}`);
+  }
+  return next.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+}
+
+function readTomlRoot(codexHome) {
+  const file = codexRuntimeConfigPath(codexHome);
+  if (!fs.existsSync(file)) return {};
+  const root = {};
+  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/u)) {
+    if (/^\s*\[[^\]]+\]\s*$/u.test(line)) break;
+    const match = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/u);
+    if (!match) continue;
+    let value = match[2].trim();
+    if (value.startsWith('"') && value.endsWith('"')) {
+      try {
+        value = JSON.parse(value);
+      } catch (_) {
+        value = value.slice(1, -1);
+      }
+    } else if (/^\d+$/u.test(value)) {
+      value = Number(value);
+    } else if (value === "true" || value === "false") {
+      value = value === "true";
+    }
+    root[match[1]] = value;
+  }
+  return root;
+}
+
+function writeCodexRuntimeConfig(codexHome, runtime) {
+  if (!runtime.configureRuntime) return false;
+  ensureDir(codexHome);
+  const file = codexRuntimeConfigPath(codexHome);
+  let content = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+  const updates = {
+    model_reasoning_effort: runtime.modelReasoningEffort,
+    max_threads: runtime.maxThreads,
+    max_depth: runtime.maxDepth,
+    job_max_runtime_seconds: runtime.jobMaxRuntimeSeconds,
+  };
+  if (runtime.model) updates.model = runtime.model;
+  if (runtime.sandboxMode) updates.sandbox_mode = runtime.sandboxMode;
+  for (const [key, value] of Object.entries(updates)) {
+    content = upsertTomlRootKey(content, key, value);
+  }
+  writeFile(file, content);
+  return true;
+}
+
 function writeFrameworkConfig(config) {
   const content = `# Codex Company Framework config
 version: "1"
@@ -301,6 +405,14 @@ company_root: ${yamlQuote(config.companyRoot)}
 worker_documents_root: ${yamlQuote(config.workerDocumentsRoot)}
 default_owner_skill: "codex-owner-operator"
 default_company_creator_skill: "codex-company-creator"
+runtime_configured: ${config.runtime.configureRuntime ? "true" : "false"}
+codex_config_path: ${yamlQuote(codexRuntimeConfigPath(config.codexHome))}
+runtime_model: ${yamlQuote(config.runtime.model || "")}
+runtime_model_reasoning_effort: ${yamlQuote(config.runtime.modelReasoningEffort)}
+runtime_sandbox_mode: ${yamlQuote(config.runtime.sandboxMode || "")}
+runtime_max_threads: ${config.runtime.maxThreads}
+runtime_max_depth: ${config.runtime.maxDepth}
+runtime_job_max_runtime_seconds: ${config.runtime.jobMaxRuntimeSeconds}
 `;
   writeFile(frameworkConfigPath(config.codexHome), content);
 }
@@ -331,6 +443,15 @@ function readFrameworkConfig(codexHome) {
     agentMemoryRoot: config.agent_memory_root || path.join(codexHome, "agent_memory"),
     companyRoot: config.company_root || defaultCompanyRoot(),
     workerDocumentsRoot: config.worker_documents_root || config.company_root || defaultCompanyRoot(),
+    runtime: {
+      configureRuntime: config.runtime_configured === "true" || config.runtime_configured === true,
+      model: config.runtime_model || "",
+      modelReasoningEffort: config.runtime_model_reasoning_effort || "high",
+      sandboxMode: config.runtime_sandbox_mode || "",
+      maxThreads: Number(config.runtime_max_threads || 20),
+      maxDepth: Number(config.runtime_max_depth || 20),
+      jobMaxRuntimeSeconds: Number(config.runtime_job_max_runtime_seconds || 3600),
+    },
   };
 }
 
@@ -351,6 +472,7 @@ Core behavior:
 
 Company integrity gate:
 - read framework config, owner registry, named company skill, and company memory;
+- check Codex runtime capacity when the config says runtime tuning was applied;
 - verify project path, company root, company memory, report root, worker roster, worker folders, role files, and agent memory;
 - treat missing memory or registry/skill conflict as blocking; treat a company
   outside the current default company_root as a warning if all registered paths exist and agree;
@@ -390,10 +512,12 @@ First read the framework config if it exists:
 %USERPROFILE%\\.codex\\codex-company-framework.yaml
 
 Use that config to know the selected external company memory root, worker
-documents/report root, Owner memory root, and agent memory root.
+documents/report root, Owner memory root, agent memory root, and recommended
+Codex runtime capacity.
 
 First, run the company integrity gate:
 - read the Owner registry;
+- verify Codex runtime settings if the framework config says runtime tuning was applied;
 - check whether this project already has a company;
 - if a company exists, verify its registry entry, company skill, company root,
   memory folder, report folder, worker roster, worker folders, role files, and
@@ -425,8 +549,8 @@ You are Company Creator for a new Codex company.
 Read framework config if it exists:
 %USERPROFILE%\\.codex\\codex-company-framework.yaml
 
-Use the configured company_root and worker_documents_root. Do not assume a
-specific drive letter.
+Use the configured company_root, worker_documents_root, owner_memory_root,
+agent_memory_root, and runtime settings. Do not assume a specific drive letter.
 
 Project path:
 ${projectPath}
@@ -442,6 +566,8 @@ Inspect the project and return:
 - project type and runtime;
 - risks and protected routes;
 - proposed worker roles;
+- suggested worker permissions and escalation rules;
+- whether workers may need subworkers, parallelism, or long-running tasks;
 - memory/report layout;
 - missing questions;
 - recommended next phase.
@@ -498,6 +624,7 @@ async function setup() {
     const agentMemoryRoot = getOption("agent-memory-root", path.join(codexHome, "agent_memory"));
     const companyRoot = getOption("company-root", companyRootFromDriveOption() || defaultCompanyRoot());
     const workerDocumentsRoot = resolvePathInput(getOption("worker-documents-root", companyRoot), companyRoot);
+    const runtime = runtimeDefaults();
 
     ensureDir(codexHome);
     ensureDir(ownerMemoryRoot);
@@ -505,13 +632,16 @@ async function setup() {
     ensureDir(companyRoot);
     ensureDir(workerDocumentsRoot);
     installSkills(codexHome);
+    const runtimeUpdated = writeCodexRuntimeConfig(codexHome, runtime);
     writeIfMissing(path.join(ownerMemoryRoot, "OWNER_OPERATING_PROTOCOL.md"), ownerProtocol());
     writeIfMissing(path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md"), currentCompaniesHeader());
-    const config = { codexHome, ownerMemoryRoot, agentMemoryRoot, companyRoot, workerDocumentsRoot };
+    const config = { codexHome, ownerMemoryRoot, agentMemoryRoot, companyRoot, workerDocumentsRoot, runtime };
     writeFrameworkConfig(config);
 
     console.log("Setup complete.");
     console.log(`Config: ${frameworkConfigPath(codexHome)}`);
+    console.log(runtimeUpdated ? `Codex runtime config updated: ${codexRuntimeConfigPath(codexHome)}` : "Codex runtime config not changed.");
+    printRuntimeHealthReport(config);
     printCompanyHealthReport(config);
     printSetupNextSteps(codexHome, companyRoot);
     return;
@@ -535,6 +665,7 @@ async function setup() {
     console.log("  Use --advanced only if you intentionally want to change these.");
 
     const companyRoot = await askExternalCompanyRoot(rl);
+    const runtime = await askRuntimeConfig(rl);
 
     const workerDocumentsRoot = advanced
       ? resolvePathInput(
@@ -549,16 +680,19 @@ async function setup() {
     ensureDir(companyRoot);
     ensureDir(workerDocumentsRoot);
     installSkills(codexHome);
+    const runtimeUpdated = writeCodexRuntimeConfig(codexHome, runtime);
 
     writeIfMissing(path.join(ownerMemoryRoot, "OWNER_OPERATING_PROTOCOL.md"), ownerProtocol());
     writeIfMissing(path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md"), currentCompaniesHeader());
-    const config = { codexHome, ownerMemoryRoot, agentMemoryRoot, companyRoot, workerDocumentsRoot };
+    const config = { codexHome, ownerMemoryRoot, agentMemoryRoot, companyRoot, workerDocumentsRoot, runtime };
     writeFrameworkConfig(config);
 
     console.log("\nSetup complete.");
     console.log(`Config: ${frameworkConfigPath(codexHome)}`);
+    console.log(runtimeUpdated ? `Codex runtime config updated: ${codexRuntimeConfigPath(codexHome)}` : "Codex runtime config not changed.");
     console.log(`Owner memory: ${ownerMemoryRoot}`);
     console.log(`Company root: ${companyRoot}`);
+    printRuntimeHealthReport(config);
     printCompanyHealthReport(config);
     printSetupNextSteps(codexHome, companyRoot);
   } finally {
@@ -606,12 +740,24 @@ ${companyRoot}
 
 ${workerList}
 
-Each worker must return evidence checked, findings, assumptions, unsupported
-claims, recommended next task, and memory-update notes.
+Before assigning work, the Owner must check each worker's
+\`agents/<worker>/ROLE.md\` and per-agent memory. Workers are professional
+specialists, not blind executors. They may say no, warn, request clarification,
+or escalate when the task is unsafe, outside scope, missing evidence, or better
+handled by another role.
+
+Each worker must return role, task, evidence checked, findings, risks and edge
+cases, assumptions, unsupported claims, recommendation, recommended next task,
+memory-update notes, and escalations for Owner.
+
+If a task needs more workers than the current roster, the Owner must ask Company
+Creator to create or repair the company instead of improvising hidden roles.
 
 ## Owner Review
 
 Treat worker output as draft evidence. Verify critical claims before accepting.
+Do not accept a worker's final verdict until the important numbers, paths,
+runtime routes, tests, or artifacts have been independently checked.
 `;
   const openaiYaml = `interface:
   display_name: ${yamlDoubleQuote(`${companyName} Company`)}
@@ -687,6 +833,91 @@ ${workers.map((w) => `- ${w}`).join("\n")}
   );
 }
 
+function workerRoleTemplate({ companyName, companyId, worker, memoryFile, companyRoot }) {
+  return `# ${titleCase(worker)} Role
+
+Company: ${companyName}
+Company ID: ${companyId}
+Worker: ${worker}
+Memory: ${memoryFile}
+Company root: ${companyRoot}
+
+## Responsibilities
+
+- Act as a specialist worker for this company, not as the Owner.
+- Inspect real files, commands, runtime output, logs, database rows, reports, or source artifacts before making operational claims.
+- Think beyond the literal task: identify edge cases, missing evidence, unsafe assumptions, hidden coupling, and follow-up work.
+- Produce project reports, evidence notes, drafts, or handoff files only in this worker's approved company folders unless the Owner explicitly approves another path.
+- Return memory-update notes when durable lessons should be stored.
+
+## Allowed Actions
+
+- Read project files and company memory relevant to the assigned task.
+- Run non-destructive commands needed for evidence, testing, or inspection.
+- Write reports, evidence, drafts, and handoff notes in this worker's company folders.
+- Edit application code only when the Owner prompt explicitly assigns an implementation task and defines the allowed paths.
+- Use web/search only when the assigned role requires current external information, standards, documentation, market research, or source citations.
+
+## Forbidden Actions
+
+- Do not invent evidence, routes, counts, test results, or file contents.
+- Do not continue if the requested runtime/database/project route is unclear.
+- Do not make destructive changes, delete data, reset git history, change production state, or alter secrets without explicit Owner approval.
+- Do not self-approve your own work as final truth. The Owner reviews worker output.
+- Do not store secrets, tokens, passwords, cookies, private keys, or raw credentials in memory or reports.
+
+## Professional Judgement
+
+The worker may and should say no when a task is unsafe, impossible, under-specified, or outside the assigned role.
+
+Warn the Owner when:
+
+- evidence is incomplete or contradictory;
+- the task may affect production, money, customer data, credentials, or live infrastructure;
+- a requested conclusion is not supported by the inspected facts;
+- another worker role is better suited for part of the task;
+- a follow-up validation pass is needed before implementation.
+
+## Escalation Rules
+
+Escalate to the Owner before proceeding when:
+
+- the task needs broader permissions than the Owner prompt allowed;
+- the project/company paths do not match the framework registry or company skill;
+- database, Docker, API, or runtime routing is ambiguous;
+- tests fail in a way that changes the recommended plan;
+- the worker finds a material risk outside the original scope.
+
+## Required Evidence
+
+Every report must separate:
+
+- facts directly observed;
+- assumptions;
+- unsupported or weak claims;
+- decisions/recommendations;
+- next tasks.
+
+Use exact paths, commands, SQL routes, URLs, timestamps, or artifact names when available.
+
+## Output Format
+
+\`\`\`text
+Role:
+Task:
+Evidence checked:
+Findings:
+Risks and edge cases:
+Assumptions:
+Unsupported claims:
+Recommendation:
+Recommended next task:
+Memory-update notes:
+Escalations for Owner:
+\`\`\`
+`;
+}
+
 function appendCurrentCompany(ownerMemoryRoot, details) {
   const file = path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md");
   writeIfMissing(file, currentCompaniesHeader());
@@ -751,6 +982,7 @@ async function initCompany() {
       agentMemoryRoot: path.join(codexHome, "agent_memory"),
       companyRoot: defaultCompanyRoot(),
       workerDocumentsRoot: defaultCompanyRoot(),
+      runtime: runtimeDefaults(),
     };
     const projectPath = getOption("project", process.cwd());
     const companyName = getOption("name", titleCase(path.basename(path.resolve(projectPath))) || "New Project");
@@ -770,6 +1002,7 @@ async function initCompany() {
       agentMemoryRoot: path.join(codexHome, "agent_memory"),
       companyRoot: defaultCompanyRoot(),
       workerDocumentsRoot: defaultCompanyRoot(),
+      runtime: runtimeDefaults(),
     };
 
     console.log("\nUsing framework config:");
@@ -825,33 +1058,11 @@ function createCompany({ codexHome, config, projectPath, companyName, companyId,
     ensureDir(path.join(companyRoot, "agents", worker, "evidence"));
     ensureDir(path.join(companyRoot, "agents", worker, "drafts"));
     ensureDir(path.join(companyRoot, "agents", worker, "handoff"));
-    writeIfMissing(path.join(companyRoot, "agents", worker, "ROLE.md"), `# ${titleCase(worker)} Role
-
-Company: ${companyName}
-Worker: ${worker}
-
-## Responsibilities
-
-## Allowed Actions
-
-## Forbidden Actions
-
-## Required Evidence
-
-## Output Format
-
-\`\`\`text
-Evidence checked:
-Findings:
-Assumptions:
-Unsupported claims:
-Recommended next task:
-Memory-update notes:
-\`\`\`
-`);
     const memDir = path.join(config.agentMemoryRoot, companyId, worker);
     ensureDir(memDir);
-    writeIfMissing(path.join(memDir, "MEMORY.md"), `# Worker Memory
+    const memoryFile = path.join(memDir, "MEMORY.md");
+    writeIfMissing(path.join(companyRoot, "agents", worker, "ROLE.md"), workerRoleTemplate({ companyName, companyId, worker, memoryFile, companyRoot }));
+    writeIfMissing(memoryFile, `# Worker Memory
 
 Company: ${companyName}
 Worker: ${worker}
@@ -1063,6 +1274,48 @@ function printCompanyHealthReport(config) {
   return findings.every((finding) => finding.level !== "FAIL");
 }
 
+function collectRuntimeHealth(config) {
+  const findings = [];
+  if (!config.runtime || !config.runtime.configureRuntime) {
+    findings.push({ level: "WARN", message: "Framework runtime tuning is disabled. Setup will not tune max_threads, max_depth, or job runtime." });
+    return findings;
+  }
+  const configFile = codexRuntimeConfigPath(config.codexHome);
+  if (!fs.existsSync(configFile)) {
+    findings.push({ level: "FAIL", message: `Codex runtime config is missing: ${configFile}` });
+    return findings;
+  }
+  const root = readTomlRoot(config.codexHome);
+  const expected = {
+    model_reasoning_effort: config.runtime.modelReasoningEffort,
+    max_threads: config.runtime.maxThreads,
+    max_depth: config.runtime.maxDepth,
+    job_max_runtime_seconds: config.runtime.jobMaxRuntimeSeconds,
+  };
+  if (config.runtime.model) expected.model = config.runtime.model;
+  if (config.runtime.sandboxMode) expected.sandbox_mode = config.runtime.sandboxMode;
+  for (const [key, value] of Object.entries(expected)) {
+    if (root[key] !== value) {
+      findings.push({ level: "FAIL", message: `Codex runtime ${key} mismatch. expected=${value} actual=${root[key] === undefined ? "<missing>" : root[key]}` });
+    }
+  }
+  return findings;
+}
+
+function printRuntimeHealthReport(config) {
+  const findings = collectRuntimeHealth(config);
+  if (findings.length === 0) {
+    console.log(`PASS Codex runtime config: ${codexRuntimeConfigPath(config.codexHome)}`);
+    return true;
+  }
+  console.log("");
+  console.log("Codex runtime warnings");
+  for (const finding of findings) {
+    console.log(`${finding.level} ${finding.message}`);
+  }
+  return findings.every((finding) => finding.level !== "FAIL");
+}
+
 function loadFrameworkConfigOrDefault(codexHome) {
   return readFrameworkConfig(codexHome) || {
     codexHome,
@@ -1070,6 +1323,7 @@ function loadFrameworkConfigOrDefault(codexHome) {
     agentMemoryRoot: path.join(codexHome, "agent_memory"),
     companyRoot: defaultCompanyRoot(),
     workerDocumentsRoot: defaultCompanyRoot(),
+    runtime: runtimeDefaults(),
   };
 }
 
@@ -1218,8 +1472,9 @@ function doctor() {
     ok = ok && exists;
     console.log(`${exists ? "PASS" : "FAIL"} ${label}: ${target}`);
   }
+  const runtimeOk = printRuntimeHealthReport(config);
   const companyOk = printCompanyHealthReport(config);
-  process.exitCode = ok && companyOk ? 0 : 1;
+  process.exitCode = ok && runtimeOk && companyOk ? 0 : 1;
 }
 
 function printOwnerPrompt() {

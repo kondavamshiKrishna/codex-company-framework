@@ -38,6 +38,7 @@ The setup wizard asks:
 
 ```text
 External memory drive
+Configure Codex runtime for company workflows? Enter Y or N
 ```
 
 It does not ask normal users for internal Codex paths or a separate worker
@@ -84,6 +85,37 @@ If the user chooses `E`, setup creates and uses:
 E:\Codex\Companies
 ```
 
+By default, setup also updates `%USERPROFILE%\.codex\config.toml` for company
+workflow capacity:
+
+```toml
+model_reasoning_effort = "high"
+max_threads = 20
+max_depth = 20
+job_max_runtime_seconds = 3600
+```
+
+These settings give the Owner and workers room for parallel workers,
+subworkers, and 45-60 minute audits. Setup does not force a model or
+full-access sandbox mode unless the user explicitly passes them.
+
+Opt out:
+
+```powershell
+npx codex-company-framework setup --no-runtime-config
+```
+
+Set account-specific values:
+
+```powershell
+npx codex-company-framework setup --yes `
+  --model "<your-model>" `
+  --sandbox-mode "<your-sandbox-mode>" `
+  --max-threads 20 `
+  --max-depth 20 `
+  --runtime-seconds 3600
+```
+
 For non-interactive setup, pass a drive:
 
 ```powershell
@@ -104,6 +136,7 @@ The setup command creates:
 %USERPROFILE%\.codex\owner_memory
 %USERPROFILE%\.codex\agent_memory
 %USERPROFILE%\.codex\codex-company-framework.yaml
+%USERPROFILE%\.codex\config.toml
 ```
 
 It also saves first-use prompt files:

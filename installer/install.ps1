@@ -3,6 +3,12 @@ param(
     [string]$CompanyRoot = "",
     [string]$WorkerDocumentsRoot = "",
     [string]$Drive = "",
+    [string]$Model = "",
+    [string]$SandboxMode = "",
+    [int]$MaxThreads = 0,
+    [int]$MaxDepth = 0,
+    [int]$RuntimeSeconds = 0,
+    [switch]$NoRuntimeConfig,
     [switch]$Yes
 )
 
@@ -43,6 +49,30 @@ if ($WorkerDocumentsRoot) {
 
 if ($Drive) {
     $NodeArgs += @("--drive", $Drive)
+}
+
+if ($Model) {
+    $NodeArgs += @("--model", $Model)
+}
+
+if ($SandboxMode) {
+    $NodeArgs += @("--sandbox-mode", $SandboxMode)
+}
+
+if ($MaxThreads -gt 0) {
+    $NodeArgs += @("--max-threads", [string]$MaxThreads)
+}
+
+if ($MaxDepth -gt 0) {
+    $NodeArgs += @("--max-depth", [string]$MaxDepth)
+}
+
+if ($RuntimeSeconds -gt 0) {
+    $NodeArgs += @("--runtime-seconds", [string]$RuntimeSeconds)
+}
+
+if ($NoRuntimeConfig) {
+    $NodeArgs += "--no-runtime-config"
 }
 
 & node @NodeArgs

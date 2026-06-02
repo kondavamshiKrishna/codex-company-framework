@@ -35,6 +35,7 @@ npx github:kondavamshiKrishna/codex-company-framework setup
 The setup command asks for:
 
 - external memory drive.
+- whether to configure Codex runtime for company workflows.
 
 By default, internal Codex paths are automatic:
 
@@ -56,6 +57,35 @@ available. It then creates:
 
 That folder stores company documents, Owner project memory, worker reports,
 prompts, and evidence.
+
+By default, setup also updates:
+
+```text
+%USERPROFILE%\.codex\config.toml
+```
+
+with company-workflow runtime capacity:
+
+```toml
+model_reasoning_effort = "high"
+max_threads = 20
+max_depth = 20
+job_max_runtime_seconds = 3600
+```
+
+This gives workers and nested worker chains enough room for long audits. Setup
+does not force a model or full-access sandbox mode because those are
+account/system-specific. To opt out:
+
+```powershell
+npx codex-company-framework setup --no-runtime-config
+```
+
+To set a specific model or sandbox mode intentionally:
+
+```powershell
+npx codex-company-framework setup --yes --model "<your-model>" --sandbox-mode "<your-sandbox-mode>"
+```
 
 Normal setup uses the selected drive for both company memory and worker reports.
 Use `--advanced` or `--worker-documents-root` only if you intentionally want a
@@ -220,6 +250,13 @@ installer
 docs
 examples
 ```
+
+## Worker Behavior Standard
+
+Generated workers are professional specialists. They can say no, warn the
+Owner, ask for clarification, and escalate unsafe or unsupported tasks. Worker
+outputs are draft evidence; the Owner verifies critical claims before accepting
+them.
 
 ## What This Repository Must Not Contain
 
