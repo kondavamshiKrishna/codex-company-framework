@@ -47,6 +47,20 @@ in your project folder, and paste that prompt into a new chat.
 powershell -ExecutionPolicy Bypass -File .\installer\validate.ps1
 ```
 
+## Remove A Test Company
+
+Dry run:
+
+```powershell
+npx codex-company-framework remove-company --id video-nut
+```
+
+Confirm removal:
+
+```powershell
+npx codex-company-framework remove-company --id video-nut --yes
+```
+
 ## Use In A New Chat
 
 ```text

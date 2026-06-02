@@ -1,21 +1,32 @@
 param(
-    [string]$CodexHome = "$env:USERPROFILE\.codex"
+    [string]$CodexHome = "$env:USERPROFILE\.codex",
+    [switch]$All,
+    [switch]$Yes
 )
 
 $ErrorActionPreference = "Stop"
 
-$SkillNames = @(
-    "codex-owner-operator",
-    "codex-company-creator"
-)
+$InstallerDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot = Split-Path -Parent $InstallerDir
+$Cli = Join-Path $RepoRoot "bin\codex-company-framework.js"
 
-foreach ($SkillName in $SkillNames) {
-    $Target = Join-Path $CodexHome "skills\$SkillName"
-    if (Test-Path -LiteralPath $Target) {
-        Remove-Item -LiteralPath $Target -Recurse -Force
-        Write-Host "Removed skill: $SkillName"
-    }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
+    throw "Node.js is required to run the framework uninstall command."
 }
 
-Write-Host "Uninstall complete. Owner memory and agent memory were not removed."
+if (-not (Test-Path -LiteralPath $Cli)) {
+    throw "Missing CLI entrypoint: $Cli"
+}
 
+$NodeArgs = @($Cli, "uninstall", "--codex-home", $CodexHome)
+
+if ($All) {
+    $NodeArgs += "--all"
+}
+
+if ($Yes) {
+    $NodeArgs += "--yes"
+}
+
+& node @NodeArgs
+exit $LASTEXITCODE

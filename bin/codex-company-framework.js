@@ -15,6 +15,9 @@ function usage() {
 Usage:
   ccf setup                 Install global Owner and Company Creator skills
   ccf init-company          Create a project-specific company workspace
+  ccf list-companies        List registered companies
+  ccf remove-company        Remove one project/company install
+  ccf uninstall             Remove framework install
   ccf doctor                Verify framework installation
   ccf owner-prompt          Print the standard Owner activation prompt
   ccf company-prompt        Print the standard Company Creator prompt
@@ -28,6 +31,9 @@ Examples:
   npx codex-company-framework init-company
   npx codex-company-framework init-company --project . --name "My App" --yes
   npx codex-company-framework init-company --project . --name "My App" --yes --force
+  npx codex-company-framework list-companies
+  npx codex-company-framework remove-company --id video-nut --yes
+  npx codex-company-framework uninstall --all --yes
   ccf doctor --codex-home "%USERPROFILE%\\.codex"
   ccf doctor
 `);
@@ -1056,15 +1062,147 @@ function printCompanyHealthReport(config) {
   return findings.every((finding) => finding.level !== "FAIL");
 }
 
-function doctor() {
-  const codexHome = getOption("codex-home", defaultCodexHome());
-  const config = readFrameworkConfig(codexHome) || {
+function loadFrameworkConfigOrDefault(codexHome) {
+  return readFrameworkConfig(codexHome) || {
     codexHome,
     ownerMemoryRoot: path.join(codexHome, "owner_memory"),
     agentMemoryRoot: path.join(codexHome, "agent_memory"),
     companyRoot: defaultCompanyRoot(),
     workerDocumentsRoot: defaultCompanyRoot(),
   };
+}
+
+function findCompany(config, query) {
+  const normalized = slugify(query);
+  return parseCompanyRegistry(config.ownerMemoryRoot).find((company) => {
+    return (
+      company.companyId === normalized ||
+      slugify(company.companyName) === normalized ||
+      slugify(company.skillName || "") === normalized ||
+      company.skillName === query
+    );
+  });
+}
+
+function removePathIfExists(target, label, dryRun = false) {
+  if (!target || !fs.existsSync(target)) {
+    console.log(`SKIP ${label}: ${target || "<not set>"}`);
+    return;
+  }
+  if (dryRun) {
+    console.log(`WOULD REMOVE ${label}: ${target}`);
+    return;
+  }
+  fs.rmSync(target, { recursive: true, force: true });
+  console.log(`REMOVED ${label}: ${target}`);
+}
+
+function looksLikeCompanyRoot(target) {
+  return Boolean(target) &&
+    fs.existsSync(target) &&
+    fs.statSync(target).isDirectory() &&
+    fs.existsSync(path.join(target, "memory")) &&
+    fs.existsSync(path.join(target, "agents"));
+}
+
+function registryWithoutCompany(ownerMemoryRoot, companyId) {
+  const file = path.join(ownerMemoryRoot, "CURRENT_COMPANIES.md");
+  if (!fs.existsSync(file)) return "";
+  const content = fs.readFileSync(file, "utf8");
+  const markerStart = `<!-- ccf-company:start ${companyId} -->`;
+  const markerEnd = `<!-- ccf-company:end ${companyId} -->`;
+  if (content.includes(markerStart)) {
+    const escapedStart = markerStart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const escapedEnd = markerEnd.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return content.replace(new RegExp(`\\n?${escapedStart}[\\s\\S]*?${escapedEnd}\\n?`, "g"), "\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+  }
+
+  const header = content.split(/\n(?=## )/g)[0] || currentCompaniesHeader();
+  const blocks = content.split(/\n(?=## )/g).filter((block) => /^## /m.test(block));
+  const kept = blocks.filter((block) => {
+    const titleMatch = block.match(/^##\s+(.+)$/m);
+    const companyName = titleMatch ? titleMatch[1].trim() : "";
+    const blockId = extractRegistryField(block, "Company ID") || slugify(companyName);
+    return blockId !== companyId;
+  });
+  return `${header.trimEnd()}\n\n${kept.map((block) => block.trim()).join("\n\n")}`.trimEnd() + "\n";
+}
+
+function listCompanies() {
+  const codexHome = getOption("codex-home", defaultCodexHome());
+  const config = loadFrameworkConfigOrDefault(codexHome);
+  const companies = parseCompanyRegistry(config.ownerMemoryRoot);
+  if (companies.length === 0) {
+    console.log("No companies registered.");
+    return;
+  }
+  for (const company of companies) {
+    console.log(`${company.companyId} | ${company.companyName} | ${company.skillName || "<no skill>"} | ${company.companyMemory || "<no memory>"}`);
+  }
+}
+
+function removeCompany() {
+  const codexHome = getOption("codex-home", defaultCodexHome());
+  const config = loadFrameworkConfigOrDefault(codexHome);
+  const query = getOption("id", "") || getOption("name", "") || getOption("skill", "");
+  if (!query) {
+    throw new Error("Pass --id <company-id>, --name <company-name>, or --skill <company-skill-name>.");
+  }
+  const company = findCompany(config, query);
+  if (!company) {
+    throw new Error(`No registered company matched: ${query}`);
+  }
+  const companyRoot = companyRootFromMemoryPath(company.companyMemory);
+  const skillRoot = company.skillName ? path.join(config.codexHome, "skills", company.skillName) : "";
+  const agentMemoryRoot = path.join(config.agentMemoryRoot, company.companyId);
+  const registryFile = path.join(config.ownerMemoryRoot, "CURRENT_COMPANIES.md");
+  const dryRun = !hasFlag("yes");
+
+  console.log(`Company removal target: ${company.companyName} (${company.companyId})`);
+  console.log("This removes the company skill, registry entry, company root, and per-agent memory.");
+  if (dryRun) {
+    console.log("Dry run only. Re-run with --yes to remove these paths.");
+  }
+
+  removePathIfExists(skillRoot, "company skill", dryRun);
+  removePathIfExists(agentMemoryRoot, "company agent memory", dryRun);
+  if (looksLikeCompanyRoot(companyRoot)) {
+    removePathIfExists(companyRoot, "company root", dryRun);
+  } else {
+    console.log(`SKIP company root: ${companyRoot || "<not set>"} does not look like a generated company root with memory/ and agents/.`);
+  }
+  if (dryRun) {
+    console.log(`WOULD UPDATE owner registry: ${registryFile}`);
+    return;
+  }
+  const updated = registryWithoutCompany(config.ownerMemoryRoot, company.companyId);
+  writeFile(registryFile, updated || currentCompaniesHeader());
+  console.log(`UPDATED owner registry: ${registryFile}`);
+}
+
+function uninstallFramework() {
+  const codexHome = getOption("codex-home", defaultCodexHome());
+  const config = loadFrameworkConfigOrDefault(codexHome);
+  const dryRun = !hasFlag("yes");
+  const removeAll = hasFlag("all");
+  console.log("Framework uninstall target");
+  if (dryRun) {
+    console.log("Dry run only. Re-run with --yes to remove framework install paths.");
+  }
+  removePathIfExists(path.join(codexHome, "skills", "codex-owner-operator"), "Owner skill", dryRun);
+  removePathIfExists(path.join(codexHome, "skills", "codex-company-creator"), "Company Creator skill", dryRun);
+  removePathIfExists(frameworkConfigPath(codexHome), "framework config", dryRun);
+  if (removeAll) {
+    removePathIfExists(config.ownerMemoryRoot, "owner memory", dryRun);
+    removePathIfExists(config.agentMemoryRoot, "all agent memory", dryRun);
+  } else {
+    console.log("SKIP owner memory and agent memory. Pass --all --yes to remove them too.");
+  }
+}
+
+function doctor() {
+  const codexHome = getOption("codex-home", defaultCodexHome());
+  const config = loadFrameworkConfigOrDefault(codexHome);
   const checks = [
     ["Codex home", codexHome],
     ["Owner skill", path.join(codexHome, "skills", "codex-owner-operator", "SKILL.md")],
@@ -1107,6 +1245,9 @@ function printCreatorDiscoveryPrompt() {
   try {
     if (command === "setup") await setup();
     else if (command === "init-company") await initCompany();
+    else if (command === "list-companies") listCompanies();
+    else if (command === "remove-company") removeCompany();
+    else if (command === "uninstall") uninstallFramework();
     else if (command === "doctor") doctor();
     else if (command === "owner-prompt") printOwnerPrompt();
     else if (command === "company-prompt") printCompanyPrompt();

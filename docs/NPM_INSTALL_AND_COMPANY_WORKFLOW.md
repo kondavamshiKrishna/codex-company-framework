@@ -374,11 +374,25 @@ The Company Creator should:
 ```powershell
 npx codex-company-framework setup
 npx codex-company-framework init-company
+npx codex-company-framework list-companies
+npx codex-company-framework remove-company --id "<company-id>"
+npx codex-company-framework remove-company --id "<company-id>" --yes
+npx codex-company-framework uninstall
+npx codex-company-framework uninstall --all --yes
 npx codex-company-framework doctor
 npx codex-company-framework owner-prompt
 npx codex-company-framework company-prompt
 npx codex-company-framework creator-discovery --project "<drive>:\Projects\MyApp"
 ```
+
+`remove-company` deletes one company/project framework install: company skill,
+company registry entry, generated company root, and that company's per-agent
+memory. It does not delete the source project folder. Without `--yes`, it is a
+dry run.
+
+`uninstall` removes the global Owner and Company Creator skills plus framework
+config. Add `--all --yes` only when you also want to delete Owner memory and all
+agent memory.
 
 If installed globally:
 

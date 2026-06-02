@@ -168,6 +168,38 @@ If a company root already exists, `init-company` stops instead of overwriting
 memory. Use `--force` only when you intentionally want to regenerate framework
 files for that company.
 
+## Remove A Company
+
+To remove one project/company install:
+
+```powershell
+npx codex-company-framework remove-company --id video-nut
+```
+
+The first run is a dry run. It prints the company skill, registry entry,
+company root, and per-agent memory that would be removed. To confirm:
+
+```powershell
+npx codex-company-framework remove-company --id video-nut --yes
+```
+
+This does not delete the source project folder. It removes only framework
+artifacts for that company.
+
+## Uninstall Framework
+
+To remove the global Owner and Company Creator install:
+
+```powershell
+npx codex-company-framework uninstall
+```
+
+To remove framework config, Owner memory, and all agent memory too:
+
+```powershell
+npx codex-company-framework uninstall --all --yes
+```
+
 ## What This Repository Contains
 
 ```text
